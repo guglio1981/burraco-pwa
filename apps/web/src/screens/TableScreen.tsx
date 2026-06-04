@@ -45,6 +45,24 @@ export function TableScreen() {
 
   useEffect(() => { store.clearSelection(); }, [view?.phase, view?.turn]);
 
+  // Traccia la carta pescata: quando la fase passa da draw→play salviamo gli id della mano
+  // e confrontiamo con quelli precedenti per trovare la carta nuova
+  const prevHandIdsRef = useRef<Set<string>>(new Set());
+  const drawnCardIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!view) return;
+    if (view.turn === view.you) {
+      if (view.phase === 'play') {
+        const nowIds = new Set(view.myHand.map((c) => c.id));
+        const newId = [...nowIds].find((id) => !prevHandIdsRef.current.has(id)) ?? null;
+        drawnCardIdRef.current = newId;
+      } else if (view.phase === 'draw') {
+        drawnCardIdRef.current = null;
+      }
+      prevHandIdsRef.current = new Set(view.myHand.map((c) => c.id));
+    }
+  }, [view?.phase, view?.turn, view?.rev]);
+
   // Misura la larghezza utile della mano (esclusi i padding) e aggiorna a ogni resize
   useEffect(() => {
     const el = handRef.current;
@@ -254,11 +272,28 @@ export function TableScreen() {
               <div className="lt-plbl">Mazzo</div>
             </div>
             <div className="lt-pw" onClick={onDiscardZone}>
-              <div ref={discardRef} className={'lt-disw' + (((myPhase === 'draw' && view.discard.length) || (myPhase === 'play' && sel.length === 1)) ? ' hot' : '')}>
-                {!topCard
+              <div ref={discardRef} className={'lt-disw lt-disw-fan' + (((myPhase === 'draw' && view.discard.length) || (myPhase === 'play' && sel.length === 1)) ? ' hot' : '')}>
+                {view.discard.length === 0
                   ? <div className="lt-dis-empty">vuoto</div>
-                  : <div className={`lt-card ${suitCls(topCard)}`}><LtCInner c={topCard} /></div>}
-                {view.discard.length > 0 && <div className="lt-disbadge">{view.discard.length}</div>}
+                  : (() => {
+                      // mostra max 5 carte sovrapposte a ventaglio, la più recente in cima
+                      const visible = view.discard.slice(-5);
+                      const CARD_W = 46, VIS = 20;
+                      const totalW = CARD_W + VIS * (visible.length - 1);
+                      return (
+                        <div style={{ position: 'relative', width: totalW, height: 66 }}>
+                          {visible.map((c, i) => (
+                            <div key={c.id}
+                              className={`lt-card ${suitCls(c)}`}
+                              style={{ position: 'absolute', left: i * VIS, top: 0, zIndex: i + 1 }}>
+                              <LtCInner c={c} />
+                            </div>
+                          ))}
+                          {view.discard.length > 0 && <div className="lt-disbadge" style={{ zIndex: 10 }}>{view.discard.length}</div>}
+                        </div>
+                      );
+                    })()
+                }
               </div>
               <div className="lt-plbl">Scarti</div>
             </div>
@@ -291,8 +326,8 @@ export function TableScreen() {
         <div className="lt-bot">
           <div className="lt-bot-left">
             <div className="lt-turn-lbl">
-              <span className={'lt-turn-badge' + (isMyTurn && view.turn === view.you ? ' my' : ' wait')}>
-                {isMyTurn && view.turn === view.you ? 'Tuo turno' : 'Attendi'}
+              <span className={'lt-turn-badge' + (isMyTurn && view.turn === view.you ? ' my' : ' opp')}>
+                {isMyTurn && view.turn === view.you ? 'Tuo turno' : 'Turno avv'}
               </span>
             </div>
             <div className="lt-bot-mode">{MODE_LABELS[view.mode]}</div>
@@ -304,8 +339,9 @@ export function TableScreen() {
           </div>
           <div className="lt-bot-center">
             <div className="lt-timer-wrap">
-              {isMyTurn && view.turn === view.you && (
-                <div className="lt-timer-fill" style={{ width: (timerFrac * 100) + '%' }} />
+              {isMyTurn && (
+                <div className={`lt-timer-fill${view.turn !== view.you ? ' opp' : ''}`}
+                  style={{ width: (timerFrac * 100) + '%' }} />
               )}
             </div>
             <div className="lt-msg-bar">
@@ -316,14 +352,17 @@ export function TableScreen() {
                 const mr = rowOverlap(row.length);
                 return (
                   <div className="lt-hand-row" key={ri}>
-                    {row.map((c, ci) => (
-                      <div key={c.id} data-card-id={c.id}
-                        className={`lt-card ${suitCls(c)}${sel.includes(c.id) ? ' selected' : ''}`}
-                        style={{ marginRight: ci === row.length - 1 ? 0 : mr }}
-                        onClick={() => myPhase === 'play' && toggle(c.id)}>
-                        <LtCInner c={c} />
-                      </div>
-                    ))}
+                    {row.map((c, ci) => {
+                      const isDrawn = c.id === drawnCardIdRef.current;
+                      return (
+                        <div key={c.id} data-card-id={c.id}
+                          className={`lt-card ${suitCls(c)}${sel.includes(c.id) ? ' selected' : ''}${isDrawn ? ' drawn' : ''}`}
+                          style={{ marginRight: ci === row.length - 1 ? 0 : mr }}
+                          onClick={() => myPhase === 'play' && toggle(c.id)}>
+                          <LtCInner c={c} />
+                        </div>
+                      );
+                    })}
                   </div>
                 );
               })}

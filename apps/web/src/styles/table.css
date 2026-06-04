@@ -114,11 +114,18 @@
   padding: 8px 10px; gap: 7px; flex-shrink: 0; width: 104px; border-right: 1px solid var(--border); }
 .lt-bot-center { flex: 1; display: flex; flex-direction: column; overflow: visible; min-width: 0; }
 .lt-turn-lbl { display: flex; justify-content: center; }
+/* badge carta pescata — bordo verde */
+.lt-card.drawn { box-shadow: 0 0 0 2.5px #43a047, 0 0 10px rgba(67,160,71,.5); z-index: 5; }
+/* timer avversario — colore diverso (rosso) */
+.lt-timer-fill.opp { background: #e53935; }
+
 .lt-turn-badge { display: inline-flex; align-items: center; justify-content: center; font-size: 10px;
   letter-spacing: .05em; text-transform: uppercase; font-weight: 700; border-radius: 20px;
   padding: 0 10px; height: 22px; white-space: nowrap; }
-.lt-turn-badge.my { background: #2e7d32; color: #fff; }
-.lt-turn-badge.wait { background: var(--s2); color: var(--muted); }
+.lt-turn-badge.my  { background: #2e7d32; color: #fff; }
+.lt-turn-badge.opp { background: #c62828; color: #fff; }
+/* ventaglio scarti */
+.lt-disw-fan { display: flex; align-items: center; justify-content: center; min-width: var(--cw); min-height: var(--ch); }
 .lt-bot-mode { font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: #fff; text-align: center; line-height: 1; }
 .lt-bot-round { font-size: 13px; color: var(--gold); font-weight: 700; text-align: center; line-height: 1; text-transform: uppercase; letter-spacing: .1em; }
 .lt-sort-btns { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; }
