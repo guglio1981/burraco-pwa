@@ -143,6 +143,5 @@
 /* mano (2 righe) */
 .lt-handscroll { padding: 8px 8px 6px; display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; }
 .lt-hand-row { display: flex; align-items: flex-end; flex-wrap: nowrap; justify-content: center; }
-.lt-hand-row .lt-card { margin-right: -16px; transition: transform .18s, filter .18s; }
-.lt-hand-row .lt-card:last-child { margin-right: 0; }
-.lt-hand-row .lt-card.selected { transform: translateY(-12px); filter: brightness(.6) grayscale(.25); }
+.lt-hand-row .lt-card { position: relative; transition: transform .18s, filter .18s; }
+.lt-hand-row .lt-card.selected { transform: translateY(-12px); filter: brightness(.6) grayscale(.25); z-index: 10; }

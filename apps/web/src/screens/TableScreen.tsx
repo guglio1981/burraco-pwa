@@ -33,6 +33,9 @@ export function TableScreen() {
     return () => clearInterval(id);
   }, []);
 
+  // Larghezza disponibile per la mano (per calcolare la sovrapposizione delle carte)
+  const [handW, setHandW] = useState(0);
+
   // Refs per le zone del tavolo (animazioni)
   const deckRef = useRef<HTMLDivElement>(null);
   const discardRef = useRef<HTMLDivElement>(null);
@@ -41,6 +44,17 @@ export function TableScreen() {
   const oppBarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { store.clearSelection(); }, [view?.phase, view?.turn]);
+
+  // Misura la larghezza utile della mano (esclusi i padding) e aggiorna a ogni resize
+  useEffect(() => {
+    const el = handRef.current;
+    if (!el) return;
+    const update = () => setHandW(el.clientWidth - 16);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [view !== null]);
 
   // Suono "tuo turno" quando tocca a me
   const prevTurnRef = useRef<string | null>(null);
@@ -89,7 +103,19 @@ export function TableScreen() {
     return (RIDX[a.rank] ?? 0) - (RIDX[b.rank] ?? 0);
   });
 
-  const rows = [hand.slice(0, Math.ceil(hand.length / 2)), hand.slice(Math.ceil(hand.length / 2))];
+  // Fino a 15 carte: una sola riga. Oltre: due righe.
+  const rows = hand.length <= 15
+    ? [hand]
+    : [hand.slice(0, Math.ceil(hand.length / 2)), hand.slice(Math.ceil(hand.length / 2))];
+
+  // Sovrapposizione: striscia sinistra visibile per carta (max overlap mantenendo numero+seme leggibili)
+  const CARD_W = 46, TIGHT = 20, MIN_VIS = 18;
+  function rowOverlap(n: number): number {
+    if (n <= 1) return 0;
+    const avail = handW || 360;
+    const vis = Math.max(MIN_VIS, Math.min(TIGHT, (avail - CARD_W) / (n - 1)));
+    return -(CARD_W - vis); // margin-right negativo
+  }
 
   // Azioni + animazioni + suoni
   function drawDeck() {
@@ -286,17 +312,21 @@ export function TableScreen() {
               <div className={`lt-msgbar ${msgCls}`}>{msg}</div>
             </div>
             <div ref={handRef} className="lt-handscroll">
-              {rows.map((row, ri) => (
-                <div className="lt-hand-row" key={ri}>
-                  {row.map((c) => (
-                    <div key={c.id} data-card-id={c.id}
-                      className={`lt-card ${suitCls(c)}${sel.includes(c.id) ? ' selected' : ''}`}
-                      onClick={() => myPhase === 'play' && toggle(c.id)}>
-                      <LtCInner c={c} />
-                    </div>
-                  ))}
-                </div>
-              ))}
+              {rows.map((row, ri) => {
+                const mr = rowOverlap(row.length);
+                return (
+                  <div className="lt-hand-row" key={ri}>
+                    {row.map((c, ci) => (
+                      <div key={c.id} data-card-id={c.id}
+                        className={`lt-card ${suitCls(c)}${sel.includes(c.id) ? ' selected' : ''}`}
+                        style={{ marginRight: ci === row.length - 1 ? 0 : mr }}
+                        onClick={() => myPhase === 'play' && toggle(c.id)}>
+                        <LtCInner c={c} />
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
