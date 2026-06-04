@@ -5,14 +5,17 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@burraco/shared": "*",
+    "@vitejs/plugin-react": "^4.3.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "vite": "^6.0.7",
+    "vite-plugin-pwa": "^0.21.1",
     "web-push": "^3.6.7",
     "workbox-precaching": "^7.4.1",
     "zustand": "^5.0.3"
@@ -20,9 +23,6 @@
   "devDependencies": {
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
-    "@vitejs/plugin-react": "^4.3.4",
-    "typescript": "^5.7.2",
-    "vite": "^6.0.7",
-    "vite-plugin-pwa": "^0.21.1"
+    "typescript": "^5.7.2"
   }
 }
