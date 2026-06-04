@@ -4,6 +4,7 @@ import { wsClient } from '../lib/ws.js';
 import { useStore } from '../lib/store.js';
 import { getToken, clearToken } from '../lib/session.js';
 import { Avatar, Icon, IconBtn, Toast } from '../components/Icon.js';
+import { APP_VERSION } from '../lib/version.js';
 
 const MODE_SHORT: Record<string, string> = { fast: 'Veloce', '1005': '1005', '2005': '2005' };
 const MODE_DESC: Record<string, string> = {
@@ -165,6 +166,10 @@ export function HomeScreen() {
         </div>
       </div>
       <Toast text={store.toast} />
+      <div style={{ position: 'absolute', right: 10, bottom: 8, fontSize: 11, fontWeight: 700,
+        color: 'var(--ink-dim)', letterSpacing: '.04em', opacity: 0.7, pointerEvents: 'none', userSelect: 'none' }}>
+        {APP_VERSION}
+      </div>
     </div>
   );
 }
