@@ -32,10 +32,12 @@ export interface RoomView {
 }
 
 export const api = {
-  register: (b: { username: string; email?: string; password: string }) =>
+  register: (b: { username: string; password: string }) =>
     req<AuthResp>('/register', { method: 'POST', body: JSON.stringify(b) }),
   login: (b: { username: string; password: string }) =>
     req<AuthResp>('/login', { method: 'POST', body: JSON.stringify(b) }),
+  forgotPassword: (username: string) =>
+    req<{ password: string }>('/forgot-password', { method: 'POST', body: JSON.stringify({ username }) }),
   guest: (nick?: string) =>
     req<AuthResp>('/guest', { method: 'POST', body: JSON.stringify({ nick }) }),
   me: () => req<{ user: PublicUser }>('/me'),

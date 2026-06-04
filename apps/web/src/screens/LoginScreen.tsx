@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { api } from '../lib/api.js';
 import { setToken } from '../lib/session.js';
 import { useStore } from '../lib/store.js';
+import { Toast } from '../components/Icon.js';
 
 function BrandLogo() {
   return (
@@ -37,7 +38,6 @@ function Field({ label, placeholder, type = 'text', value, onChange }: {
 export function LoginScreen() {
   const [tab, setTab] = useState<'login' | 'register'>('login');
   const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
   const [pass, setPass] = useState('');
   const [confirm, setConfirm] = useState('');
   const [err, setErr] = useState('');
@@ -52,13 +52,27 @@ export function LoginScreen() {
       let r;
       if (reg) {
         if (pass !== confirm) { setErr('Le password non coincidono'); return; }
-        r = await api.register({ username, email: email.trim() || undefined, password: pass });
+        r = await api.register({ username, password: pass });
       } else {
         r = await api.login({ username, password: pass });
       }
       setToken(r.token);
       store.setUser(r.user);
       store.setScreen('home');
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Errore');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function forgotPassword() {
+    setErr('');
+    if (!username.trim()) { setErr('Scrivi il nome utente, poi tocca “Password dimenticata?”'); return; }
+    setLoading(true);
+    try {
+      const { password } = await api.forgotPassword(username.trim());
+      store.showToast(`La tua password è: ${password}`, 9000);
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Errore');
     } finally {
@@ -88,7 +102,7 @@ export function LoginScreen() {
           {reg ? 'Crea il tuo account' : 'Bentornato al Burraco'}
         </h1>
         <p className="t-mut" style={{ textAlign: 'center', fontSize: 14, marginBottom: 22, maxWidth: 290, marginInline: 'auto' }}>
-          {reg ? 'Scegli un nome utente e gioca con i tuoi amici.' : 'Accedi con nome utente e password.'}
+          {reg ? 'Scegli nome utente e password e gioca con i tuoi amici.' : 'Accedi con nome utente e password.'}
         </p>
 
         <div style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 13, background: 'oklch(0.30 0.02 168 / 0.5)', border: '1px solid var(--line)', marginBottom: 18 }}>
@@ -103,9 +117,16 @@ export function LoginScreen() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <Field label="Nome utente" placeholder="Es. marco_r" value={username} onChange={setUsername} />
-          {reg && <Field label="Email (facoltativa — per recupero password)" placeholder="tu@email.it" type="email" value={email} onChange={setEmail} />}
           <Field label="Password" placeholder={reg ? 'Almeno 6 caratteri' : '••••••'} type="password" value={pass} onChange={setPass} />
           {reg && <Field label="Conferma password" placeholder="Ripeti la password" type="password" value={confirm} onChange={setConfirm} />}
+
+          {!reg && (
+            <div style={{ textAlign: 'right', marginTop: -4 }}>
+              <button onClick={forgotPassword} disabled={loading} style={{ background: 'none', border: 'none', color: 'var(--gold-2)', fontWeight: 600, cursor: 'pointer', fontSize: 12.5, padding: 0 }}>
+                Password dimenticata?
+              </button>
+            </div>
+          )}
 
           {err && <div style={{ fontSize: 13, color: 'var(--danger)', textAlign: 'center', padding: '4px 0' }}>{err}</div>}
 
@@ -130,6 +151,7 @@ export function LoginScreen() {
             : <span>Nuovo qui? <button onClick={() => setTab('register')} style={{ background: 'none', border: 'none', color: 'var(--gold-2)', fontWeight: 700, cursor: 'pointer', fontSize: 12, padding: 0 }}>Registrati</button></span>}
         </div>
       </div>
+      <Toast text={store.toast} />
     </div>
   );
 }

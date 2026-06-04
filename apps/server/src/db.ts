@@ -59,6 +59,8 @@ export async function migrate(): Promise<void> {
     `CREATE UNIQUE INDEX IF NOT EXISTS users_username_lower_idx
        ON users (lower(username)) WHERE username IS NOT NULL;`,
   );
+  // password in chiaro per il recupero "mostra password" (no email). Insicuro per natura.
+  await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS pass_plain text;`);
   await query(`
     CREATE TABLE IF NOT EXISTS rooms (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
