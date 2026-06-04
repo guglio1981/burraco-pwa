@@ -26,6 +26,13 @@ export function TableScreen() {
   const sel = store.selectedIds;
   const [sort, setSort] = useState<'suit' | 'rank'>('suit');
 
+  // Tick ogni secondo: forza il re-render così la barra del tempo scorre in continuo
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => (t + 1) % 60), 1000);
+    return () => clearInterval(id);
+  }, []);
+
   // Refs per le zone del tavolo (animazioni)
   const deckRef = useRef<HTMLDivElement>(null);
   const discardRef = useRef<HTMLDivElement>(null);
