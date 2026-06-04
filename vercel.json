@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm install --include=dev && npm -w @burraco/web run build",,
+  "buildCommand": "npm install --include=dev && node_modules/.bin/vite --config apps/web/vite.config.ts build",
   "outputDirectory": "apps/web/dist",
   "installCommand": "echo 'handled by buildCommand'",
   "framework": "vite"
