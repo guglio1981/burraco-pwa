@@ -134,6 +134,20 @@ export function TableScreen() {
     wsClient.move({ type: 'DISCARD', cardId: sel[0]! });
     store.clearSelection();
   }
+  // Tap sull'area degli scarti: in pesca = prendi dagli scarti; in gioco = scarta la carta selezionata
+  function onDiscardZone() {
+    if (myPhase === 'draw') { takeDiscard(); return; }
+    if (myPhase === 'play') {
+      if (sel.length === 1) doDiscard();
+      else store.showToast('Seleziona 1 carta da scartare');
+    }
+  }
+  // Tap sull'area delle mie scale: cala una nuova scala/tris con le carte selezionate
+  function onMeldsZone() {
+    if (myPhase !== 'play' || selCards.length === 0) return;
+    if (meldVal.valid) doMeld();
+    else store.showToast(meldVal.msg ?? 'Servono almeno 3 carte valide per calare');
+  }
   function addToMeld(meldIndex: number) {
     if (myPhase !== 'play' || !sel.length) return;
     const existing = view!.myMelds[meldIndex];
@@ -156,12 +170,12 @@ export function TableScreen() {
   if (myPhase === 'wait') { msg = `Turno di ${view.you === 'host' ? 'guest' : 'host'}`; }
   else if (myPhase === 'play') {
     if (selCards.length >= 3) {
-      msg = meldVal.valid ? (meldVal.label ?? 'Scala valida') : (meldVal.msg ?? 'Scala non valida');
+      msg = meldVal.valid ? `${meldVal.label ?? 'Scala valida'} — tocca le tue scale per calare` : (meldVal.msg ?? 'Scala non valida');
       msgCls = meldVal.valid ? 'ok' : 'err';
     } else if (selCards.length === 1) {
-      msg = 'Calala o scartala per chiudere il turno';
+      msg = 'Tocca gli scarti per scartare e chiudere il turno';
     } else {
-      msg = 'Seleziona le carte da calare';
+      msg = 'Seleziona le carte: cala toccando le tue scale, scarta toccando gli scarti';
     }
   }
 
@@ -213,8 +227,8 @@ export function TableScreen() {
               </div>
               <div className="lt-plbl">Mazzo</div>
             </div>
-            <div className="lt-pw" onClick={takeDiscard}>
-              <div ref={discardRef} className={'lt-disw' + (myPhase === 'draw' && view.discard.length ? ' hot' : '')}>
+            <div className="lt-pw" onClick={onDiscardZone}>
+              <div ref={discardRef} className={'lt-disw' + (((myPhase === 'draw' && view.discard.length) || (myPhase === 'play' && sel.length === 1)) ? ' hot' : '')}>
                 {!topCard
                   ? <div className="lt-dis-empty">vuoto</div>
                   : <div className={`lt-card ${suitCls(topCard)}`}><LtCInner c={topCard} /></div>}
@@ -234,14 +248,14 @@ export function TableScreen() {
             <LtPozzoPile taken={view.myPozzoPicked} count={view.myPozzoCount} />
           </div>
 
-          {/* scale mie */}
-          <div className="lt-my-melds" ref={myMeldsRef}>
+          {/* scale mie — tocca qui per calare una nuova scala/tris */}
+          <div className={'lt-my-melds' + (myPhase === 'play' && meldVal.valid ? ' hot' : '')} ref={myMeldsRef} onClick={onMeldsZone}>
             <div className="lt-melds-row">
               {view.myMelds.length === 0
-                ? <span className="lt-meld-empty">nessuna scala</span>
+                ? <span className="lt-meld-empty">{myPhase === 'play' && selCards.length >= 3 ? 'tocca qui per calare' : 'nessuna scala'}</span>
                 : view.myMelds.map((m, i) => (
                     <LtMeldPile key={i} cards={m}
-                      onClick={() => myPhase === 'play' && sel.length > 0 && addToMeld(i)} />
+                      onClick={(e) => { e.stopPropagation(); if (myPhase === 'play' && sel.length > 0) addToMeld(i); }} />
                   ))}
             </div>
           </div>
@@ -270,12 +284,6 @@ export function TableScreen() {
             </div>
             <div className="lt-msg-bar">
               <div className={`lt-msgbar ${msgCls}`}>{msg}</div>
-              {myPhase === 'play' && (
-                <>
-                  <button className={`lt-act-btn lt-act-gold${meldVal.valid ? '' : ' off'}`} onClick={doMeld}>Cala</button>
-                  <button className={`lt-act-btn lt-act-ghost${sel.length === 1 ? '' : ' off'}`} onClick={doDiscard}>Scarta</button>
-                </>
-              )}
             </div>
             <div ref={handRef} className="lt-handscroll">
               {rows.map((row, ri) => (

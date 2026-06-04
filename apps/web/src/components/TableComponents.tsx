@@ -55,7 +55,7 @@ export function LtMeldStack({ cards }: { cards: Card[] }) {
   );
 }
 
-interface LtMeldPileProps { cards: Card[]; onClick?: () => void; }
+interface LtMeldPileProps { cards: Card[]; onClick?: (e: React.MouseEvent) => void; }
 export function LtMeldPile({ cards, onClick }: LtMeldPileProps) {
   const t = cards.length >= 7 ? burracoType(cards) : null;
   const lblMap: Record<string, string> = { clean: 'Pulito', semi: 'Semi', dirty: 'Sporco' };
