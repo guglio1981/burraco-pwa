@@ -42,7 +42,7 @@ export async function roomView(room: RoomRow): Promise<RoomView> {
   const host = await getUser(room.host_id);
   const guest = room.guest_id ? await getUser(room.guest_id) : null;
   const pub = (u: typeof host): PublicUser | null =>
-    u ? { id: u.id, nick: u.nick, email: u.email, isGuest: u.is_guest } : null;
+    u ? { id: u.id, nick: u.nick, username: u.username, email: u.email, isGuest: u.is_guest } : null;
   return {
     id: room.id,
     code: room.code,

@@ -41,7 +41,8 @@ export async function migrate(): Promise<void> {
     CREATE TABLE IF NOT EXISTS users (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       nick text NOT NULL,
-      email text UNIQUE,
+      username text,
+      email text,
       pass_hash text,
       is_guest boolean NOT NULL DEFAULT false,
       push_subscription jsonb,
@@ -49,6 +50,15 @@ export async function migrate(): Promise<void> {
       created_at timestamptz NOT NULL DEFAULT now()
     );
   `);
+  // ── Migrazioni idempotenti (login via username; email non più univoca) ──
+  await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS username text;`);
+  // l'email NON deve più essere univoca: più utenti possono condividere la stessa mail
+  await query(`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_key;`);
+  // username univoco e case-insensitive, solo per utenti registrati (gli ospiti hanno username NULL)
+  await query(
+    `CREATE UNIQUE INDEX IF NOT EXISTS users_username_lower_idx
+       ON users (lower(username)) WHERE username IS NOT NULL;`,
+  );
   await query(`
     CREATE TABLE IF NOT EXISTS rooms (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

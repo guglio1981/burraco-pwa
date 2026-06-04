@@ -42,7 +42,7 @@ export function createApiRouter(hub: GameHub): Router {
   r.get('/me', asyncH(async (req, res) => {
     const u = await getUser(requireAuth(req));
     if (!u) throw new AppError(401, 'Utente non trovato');
-    res.json({ user: { id: u.id, nick: u.nick, email: u.email, isGuest: u.is_guest } });
+    res.json({ user: { id: u.id, nick: u.nick, username: u.username, email: u.email, isGuest: u.is_guest } });
   }));
 
   // ── Stanze ──

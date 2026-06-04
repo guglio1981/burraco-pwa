@@ -93,7 +93,7 @@ export function HomeScreen() {
             <div>
               <div style={{ fontWeight: 700, fontSize: 14.5, color: 'var(--ink)' }}>{user?.nick ?? 'Ospite'}</div>
               <div style={{ fontSize: 11.5, color: 'var(--gold-2)', fontWeight: 600 }}>
-                {user?.isGuest ? 'Ospite' : user?.email ?? ''}
+                {user?.isGuest ? 'Ospite' : user?.username ? `@${user.username}` : ''}
               </div>
             </div>
           </div>

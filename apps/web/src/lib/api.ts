@@ -23,7 +23,7 @@ async function req<T>(path: string, opts: RequestInit = {}): Promise<T> {
   return body as T;
 }
 
-export interface PublicUser { id: string; nick: string; email: string | null; isGuest: boolean; notificationsEnabled?: boolean; }
+export interface PublicUser { id: string; nick: string; username: string | null; email: string | null; isGuest: boolean; notificationsEnabled?: boolean; }
 export interface OnlineUser { id: string; nick: string; busy?: boolean; }
 export interface AuthResp { token: string; user: PublicUser; }
 export interface RoomView {
@@ -32,9 +32,9 @@ export interface RoomView {
 }
 
 export const api = {
-  register: (b: { nick: string; email: string; password: string }) =>
+  register: (b: { username: string; email?: string; password: string }) =>
     req<AuthResp>('/register', { method: 'POST', body: JSON.stringify(b) }),
-  login: (b: { email: string; password: string }) =>
+  login: (b: { username: string; password: string }) =>
     req<AuthResp>('/login', { method: 'POST', body: JSON.stringify(b) }),
   guest: (nick?: string) =>
     req<AuthResp>('/guest', { method: 'POST', body: JSON.stringify({ nick }) }),

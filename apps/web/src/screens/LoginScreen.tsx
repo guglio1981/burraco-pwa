@@ -36,7 +36,7 @@ function Field({ label, placeholder, type = 'text', value, onChange }: {
 
 export function LoginScreen() {
   const [tab, setTab] = useState<'login' | 'register'>('login');
-  const [nick, setNick] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [pass, setPass] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -52,9 +52,9 @@ export function LoginScreen() {
       let r;
       if (reg) {
         if (pass !== confirm) { setErr('Le password non coincidono'); return; }
-        r = await api.register({ nick, email, password: pass });
+        r = await api.register({ username, email: email.trim() || undefined, password: pass });
       } else {
-        r = await api.login({ email, password: pass });
+        r = await api.login({ username, password: pass });
       }
       setToken(r.token);
       store.setUser(r.user);
@@ -69,7 +69,7 @@ export function LoginScreen() {
   async function guestLogin() {
     setLoading(true);
     try {
-      const r = await api.guest(nick || undefined);
+      const r = await api.guest(username || undefined);
       setToken(r.token);
       store.setUser(r.user);
       store.setScreen('home');
@@ -88,7 +88,7 @@ export function LoginScreen() {
           {reg ? 'Crea il tuo account' : 'Bentornato al Burraco'}
         </h1>
         <p className="t-mut" style={{ textAlign: 'center', fontSize: 14, marginBottom: 22, maxWidth: 290, marginInline: 'auto' }}>
-          {reg ? 'Scegli un nickname e gioca con i tuoi amici.' : 'Accedi per sfidare i tuoi amici, ovunque siano.'}
+          {reg ? 'Scegli un nome utente e gioca con i tuoi amici.' : 'Accedi con nome utente e password.'}
         </p>
 
         <div style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 13, background: 'oklch(0.30 0.02 168 / 0.5)', border: '1px solid var(--line)', marginBottom: 18 }}>
@@ -102,8 +102,8 @@ export function LoginScreen() {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {reg && <Field label="Nickname" placeholder="Es. Marco R." value={nick} onChange={setNick} />}
-          <Field label="Email" placeholder="tu@email.it" value={email} onChange={setEmail} />
+          <Field label="Nome utente" placeholder="Es. marco_r" value={username} onChange={setUsername} />
+          {reg && <Field label="Email (facoltativa — per recupero password)" placeholder="tu@email.it" type="email" value={email} onChange={setEmail} />}
           <Field label="Password" placeholder={reg ? 'Almeno 6 caratteri' : '••••••'} type="password" value={pass} onChange={setPass} />
           {reg && <Field label="Conferma password" placeholder="Ripeti la password" type="password" value={confirm} onChange={setConfirm} />}
 
