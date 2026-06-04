@@ -3,6 +3,7 @@ import { useStore } from './lib/store.js';
 import { getToken, setToken, consumeJoinCode, getPendingJoin, setPendingJoin, clearPendingJoin } from './lib/session.js';
 import { api } from './lib/api.js';
 import { wsClient } from './lib/ws.js';
+import { enablePush, pushSupported } from './lib/push.js';
 import { LoginScreen } from './screens/LoginScreen.js';
 import { HomeScreen } from './screens/HomeScreen.js';
 import { WaitingScreen } from './screens/WaitingScreen.js';
@@ -23,6 +24,10 @@ export function App() {
 
     api.me().then(({ user }) => {
       store.setUser(user);
+      // chiedi il permesso notifiche al login, solo se non già deciso
+      if (pushSupported() && Notification.permission === 'default') {
+        setTimeout(() => enablePush(), 800);
+      }
       wsClient.connect(token, {
         onState: (v) => store.setGameView(v),
         onRoom: (r) => store.setRoom(r),
