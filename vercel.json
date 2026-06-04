@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm install && node_modules/.bin/vite --config apps/web/vite.config.ts build",
+  "buildCommand": "npm install && npx --yes vite --config apps/web/vite.config.ts build",
   "outputDirectory": "apps/web/dist",
   "installCommand": "echo 'handled by buildCommand'",
   "framework": "vite"
