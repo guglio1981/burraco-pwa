@@ -243,10 +243,8 @@ export function TableScreen() {
           <span className="lt-pname">{view.you === 'host' ? 'guest' : 'host'}</span>
           <span className="lt-sbig">{view.scores[view.you === 'host' ? 'guest' : 'host']}</span>
           <LtPozzoPile taken={view.oppPozzoPicked} count={view.oppPozzoCount} />
+          <div className="lt-opp-badge" style={{ marginLeft: 8 }}>{view.oppHandCount}</div>
           <div className="lt-spacer" />
-          <div className="lt-av" style={{ marginRight: 4 }}>
-            <div className="lt-opp-badge">{view.oppHandCount} carte</div>
-          </div>
           <button className="lt-icon-btn" aria-label="Impostazioni">
             <Icon name="gear" size={18} color="rgba(245,240,232,.6)" />
           </button>
