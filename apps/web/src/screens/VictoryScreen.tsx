@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useStore } from '../lib/store.js';
 import { Avatar, Icon } from '../components/Icon.js';
 import { wsClient } from '../lib/ws.js';
 import { api } from '../lib/api.js';
 import { getToken } from '../lib/session.js';
+import { sfx } from '../lib/sound.js';
 
 function FinalRow({ name, score, you, win }: { name: string; score: number; you?: boolean; win?: boolean; }) {
   return (
@@ -28,6 +29,14 @@ export function VictoryScreen() {
   if (!view) return null;
 
   const iWon = view.winner === view.you;
+
+  // Suona una volta sola all'arrivo sulla schermata
+  const soundedRef = useRef(false);
+  useEffect(() => {
+    if (soundedRef.current) return;
+    soundedRef.current = true;
+    setTimeout(() => iWon ? sfx.win() : sfx.lose(), 300);
+  }, []);
   const myScore = view.scores[view.you];
   const oppScore = view.scores[view.you === 'host' ? 'guest' : 'host'];
   const modeLabel = view.mode === 'fast' ? 'Veloce' : view.mode === '1005' ? 'Punti 1005' : 'Punti 2005';

@@ -90,6 +90,15 @@ export function TableScreen() {
     return () => ro.disconnect();
   }, [view !== null]);
 
+  // Suono distribuzione carte all'inizio di ogni round
+  const prevRoundRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (view && prevRoundRef.current !== view.round) {
+      sfx.deal();
+      prevRoundRef.current = view.round;
+    }
+  }, [view?.round]);
+
   // Suono "tuo turno" quando tocca a me
   const prevTurnRef = useRef<string | null>(null);
   useEffect(() => {

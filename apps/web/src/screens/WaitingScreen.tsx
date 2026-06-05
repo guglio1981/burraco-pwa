@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { api, type OnlineUser } from '../lib/api.js';
 import { useStore } from '../lib/store.js';
 import { Avatar, Icon, IconBtn, Toast } from '../components/Icon.js';
 import { enablePush, pushSupported } from '../lib/push.js';
+import { sfx } from '../lib/sound.js';
 
 const MODE_LABEL: Record<string, string> = { fast: 'Veloce', '1005': 'Punti 1005', '2005': 'Punti 2005' };
 
@@ -29,6 +30,13 @@ export function WaitingScreen() {
 
   const guestHere = !!room?.guest;
   const code = room?.code ?? '----';
+
+  // Suona quando l'avversario entra nella stanza (solo per l'host)
+  const prevGuestRef = useRef(guestHere);
+  useEffect(() => {
+    if (isHost && guestHere && !prevGuestRef.current) sfx.guestJoined();
+    prevGuestRef.current = guestHere;
+  }, [guestHere, isHost]);
   const mode = room?.gameMode ?? '1005';
   const origin = window.location.origin;
   const deepLink = `${origin}/?join=${code}`;
