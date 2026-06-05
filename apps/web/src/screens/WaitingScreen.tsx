@@ -112,7 +112,6 @@ export function WaitingScreen() {
               <div style={{ fontWeight: 700, fontSize: 15, textTransform: 'uppercase' }}>{room?.host?.nick ?? '?'}</div>
               <div style={{ fontSize: 12, color: 'var(--gold-2)', fontWeight: 600 }}>Host · pronto</div>
             </div>
-            <Icon name="check" size={20} color="var(--clean)" />
           </div>
           <div className="divider" style={{ margin: '4px 0 14px' }} />
           {/* guest */}
@@ -141,9 +140,9 @@ export function WaitingScreen() {
               {isHost ? 'Annulla' : 'Esci dalla stanza'}
             </button>}
 
-        {!isHost && !guestHere && (
-          <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--ink-dim)', marginTop: 8 }}>
-            In attesa che l'host avvii la partita…
+        {!isHost && (
+          <div style={{ textAlign: 'center', fontSize: 12.5, color: 'var(--ink-mut)', marginTop: 12 }}>
+            In attesa che <span style={{ color: 'var(--gold-2)', fontWeight: 700, textTransform: 'uppercase' }}>{room?.host?.nick ?? 'l\'host'}</span> avvii la partita…
           </div>
         )}
       </div>
