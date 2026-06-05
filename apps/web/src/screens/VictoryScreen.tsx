@@ -25,6 +25,8 @@ export function VictoryScreen() {
   const store = useStore();
   const view = store.gameView;
   const user = store.user;
+  const oppUser = store.room ? (store.room.host?.id === user?.id ? store.room.guest : store.room.host) : null;
+  const oppName = oppUser?.nick ?? 'Avversario';
 
   if (!view) return null;
 
@@ -87,10 +89,10 @@ export function VictoryScreen() {
           {iWon
             ? <>
                 <FinalRow name={user?.nick ?? 'Tu'} score={myScore} you win />
-                <FinalRow name={view.you === 'host' ? 'Guest' : 'Host'} score={oppScore} />
+                <FinalRow name={oppName} score={oppScore} />
               </>
             : <>
-                <FinalRow name={view.you === 'host' ? 'Guest' : 'Host'} score={oppScore} win />
+                <FinalRow name={oppName} score={oppScore} win />
                 <FinalRow name={user?.nick ?? 'Tu'} score={myScore} you />
               </>}
         </div>

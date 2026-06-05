@@ -57,6 +57,8 @@ export function RoundEndScreen() {
   const store = useStore();
   const view = store.gameView;
   const user = store.user;
+  const oppUser = store.room ? (store.room.host?.id === user?.id ? store.room.guest : store.room.host) : null;
+  const oppName = oppUser?.nick ?? 'Avversario';
 
   if (!view?.lastRound) return null;
 
@@ -97,7 +99,7 @@ export function RoundEndScreen() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {myBreakdown && <PlayerCard nick={user?.nick ?? 'Tu'} you won={won} b={myBreakdown} />}
-          {oppBreakdown && <PlayerCard nick={view.you === 'host' ? 'Guest' : 'Host'} you={false} won={!won && !!closer} b={oppBreakdown} />}
+          {oppBreakdown && <PlayerCard nick={oppName} you={false} won={!won && !!closer} b={oppBreakdown} />}
         </div>
 
         <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>

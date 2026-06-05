@@ -269,9 +269,17 @@ export function TableScreen() {
     store.clearSelection();
   }
 
+  // Nomi reali dei giocatori (da room/user), non host/guest
+  const room = store.room;
+  const meUser = store.user;
+  const oppUser = room ? (room.host?.id === meUser?.id ? room.guest : room.host) : null;
+  const myName = meUser?.nick ?? 'Tu';
+  const oppName = oppUser?.nick ?? 'Avversario';
+  const initial = (n: string) => n.trim()[0]?.toUpperCase() ?? '?';
+
   // Messaggio barra
   let msg = 'Pesca dal mazzo o dagli scarti', msgCls = '';
-  if (myPhase === 'wait') { msg = `Turno di ${view.you === 'host' ? 'guest' : 'host'}`; }
+  if (myPhase === 'wait') { msg = `Turno di ${oppName}`; }
   else if (myPhase === 'play') {
     if (selCards.length >= 3) {
       msg = meldVal.valid ? `${meldVal.label ?? 'Scala valida'} — tocca le tue scale per calare` : (meldVal.msg ?? 'Scala non valida');
@@ -297,10 +305,8 @@ export function TableScreen() {
 
         {/* TOPBAR avversario */}
         <div className="lt-topbar" ref={oppBarRef}>
-          <div className="lt-av">
-            {view.you === 'host' ? '🦊' : '🦝'}
-          </div>
-          <span className="lt-pname">{view.you === 'host' ? 'guest' : 'host'}</span>
+          <div className="lt-av">{initial(oppName)}</div>
+          <span className="lt-pname">{oppName}</span>
           <span className="lt-sbig">{view.scores[view.you === 'host' ? 'guest' : 'host']}</span>
           <div ref={oppPozzoRef} style={{ display: 'inline-flex' }}>
             <LtPozzoPile taken={view.oppPozzoPicked} count={view.oppPozzoCount} />
@@ -361,10 +367,8 @@ export function TableScreen() {
 
           {/* barra "Tu" */}
           <div className="lt-me-bar">
-            <div className="lt-av">
-              {view.you === 'host' ? '🦝' : '🦊'}
-            </div>
-            <span className="lt-pname">Tu</span>
+            <div className="lt-av">{initial(myName)}</div>
+            <span className="lt-pname">{myName}</span>
             <span className="lt-sbig">{view.scores[view.you]}</span>
             <div ref={myPozzoRef} style={{ display: 'inline-flex' }}>
               <LtPozzoPile taken={view.myPozzoPicked} count={view.myPozzoCount} />
