@@ -114,8 +114,8 @@
   padding: 8px 10px; gap: 7px; flex-shrink: 0; width: 104px; border-right: 1px solid var(--border); }
 .lt-bot-center { flex: 1; display: flex; flex-direction: column; overflow: visible; min-width: 0; }
 .lt-turn-lbl { display: flex; justify-content: center; }
-/* badge carta pescata — bordo verde */
-.lt-card.drawn { box-shadow: 0 0 0 2.5px #43a047, 0 0 10px rgba(67,160,71,.5); z-index: 5; }
+/* badge carta pescata — bordo verde (no z-index extra, resta nel ventaglio normale) */
+.lt-card.drawn { box-shadow: 0 0 0 2.5px #43a047, 0 0 10px rgba(67,160,71,.5); }
 /* timer avversario — colore diverso (rosso) */
 .lt-timer-fill.opp { background: #e53935; }
 
@@ -133,7 +133,7 @@
   font-family: 'Josefin Sans', sans-serif; font-size: 11px; letter-spacing: .08em; color: var(--muted); cursor: pointer; }
 .lt-sort-btn.active { background: rgba(232,196,106,.15); border-color: var(--goldd); color: var(--gold); }
 .lt-timer-wrap { height: 3px; background: rgba(245,240,232,.07); flex-shrink: 0; overflow: hidden; }
-.lt-timer-fill { height: 100%; background: var(--gold); transition: width 1s linear; }
+.lt-timer-fill { height: 100%; background: var(--gold); }
 .lt-msg-bar { flex-shrink: 0; display: flex; align-items: center; gap: 6px; padding: 5px 8px; min-height: 44px;
   border-bottom: 1px solid rgba(245,197,24,.08); }
 .lt-msgbar { font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: var(--gold);

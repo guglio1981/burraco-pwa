@@ -33,6 +33,22 @@ export function TableScreen() {
     return () => clearInterval(id);
   }, []);
 
+  // Disabilita la transizione CSS del timer per un frame quando cambia il turno,
+  // così il reset a 100% è istantaneo invece di animare la risalita
+  const [timerAnimate, setTimerAnimate] = useState(false);
+  const prevTurnKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!view) return;
+    const key = `${view.turn}-${view.round}`;
+    if (prevTurnKeyRef.current !== null && prevTurnKeyRef.current !== key) {
+      setTimerAnimate(false);
+      requestAnimationFrame(() => requestAnimationFrame(() => setTimerAnimate(true)));
+    } else if (prevTurnKeyRef.current === null) {
+      setTimerAnimate(true);
+    }
+    prevTurnKeyRef.current = key;
+  }, [view?.turn, view?.round]);
+
   // Larghezza disponibile per la mano (per calcolare la sovrapposizione delle carte)
   const [handW, setHandW] = useState(0);
 
@@ -339,7 +355,7 @@ export function TableScreen() {
             <div className="lt-timer-wrap">
               {isMyTurn && (
                 <div className={`lt-timer-fill${view.turn !== view.you ? ' opp' : ''}`}
-                  style={{ width: (timerFrac * 100) + '%' }} />
+                  style={{ width: (timerFrac * 100) + '%', transition: timerAnimate ? 'width 1s linear' : 'none' }} />
               )}
             </div>
             <div className="lt-msg-bar">
