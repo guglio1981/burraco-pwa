@@ -112,10 +112,10 @@ export function ProfilePopup({ nick, username, isGuest, onLogout, onClose }: {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
-          <Avatar name={nick} you size={52} />
+          <Avatar name={nick} size={52} />
           <div>
-            <div style={{ fontWeight: 700, fontSize: 17, color: 'var(--ink)' }}>{nick}</div>
-            <div style={{ fontSize: 12.5, color: 'var(--gold-2)', fontWeight: 600 }}>
+            <div style={{ fontWeight: 700, fontSize: 17, color: 'var(--ink)', textTransform: 'uppercase' }}>{nick}</div>
+            <div style={{ fontSize: 12.5, color: 'var(--gold-2)', fontWeight: 600, textTransform: 'uppercase' }}>
               {isGuest ? 'Ospite' : username ? `@${username}` : ''}
             </div>
           </div>

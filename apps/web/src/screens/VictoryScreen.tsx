@@ -13,7 +13,7 @@ function FinalRow({ name, score, you, win }: { name: string; score: number; you?
       border: '1px solid ' + (win ? 'oklch(0.81 0.125 86 / 0.55)' : 'var(--line)') }}>
       <Avatar name={name} you={you} size={40} ring={win} />
       <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: 700, fontSize: 15 }}>{name}{you && ' (tu)'}</div>
+        <div style={{ fontWeight: 700, fontSize: 15, textTransform: 'uppercase' }}>{name}{you && ' (tu)'}</div>
         {win && <div style={{ fontSize: 11.5, color: 'var(--gold)', fontWeight: 700 }}>★ Vincitore</div>}
       </div>
       <span className="tnum" style={{ fontFamily: 'var(--font-disp)', fontWeight: 800, fontSize: 26, color: win ? 'var(--gold)' : 'var(--ink-mut)' }}>{score}</span>

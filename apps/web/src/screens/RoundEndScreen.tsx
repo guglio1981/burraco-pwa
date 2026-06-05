@@ -24,7 +24,7 @@ function PlayerCard({ nick, you, won, b }: { nick: string; you: boolean; won: bo
       <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 10 }}>
         <Avatar name={nick} you={you} size={42} ring={won} />
         <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 700, fontSize: 15 }}>{nick}{you && ' (tu)'}</div>
+          <div style={{ fontWeight: 700, fontSize: 15, textTransform: 'uppercase' }}>{nick}{you && ' (tu)'}</div>
           <div style={{ fontSize: 11.5, color: 'var(--gold-2)', fontWeight: 600 }}>{won ? 'Ha chiuso la manche' : 'Mano residua'}</div>
         </div>
         {b.closeBonus > 0 && <span className="chip" style={{ background: 'var(--gold-soft)', color: 'var(--gold)' }}>+100 chiusura</span>}

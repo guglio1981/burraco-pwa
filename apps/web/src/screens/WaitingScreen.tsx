@@ -107,9 +107,9 @@ export function WaitingScreen() {
           <div className="t-label" style={{ marginBottom: 14 }}>Giocatori</div>
           {/* host */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-            <Avatar name={room?.host?.nick ?? '?'} you={isHost} size={46} />
+            <Avatar name={room?.host?.nick ?? '?'} size={46} />
             <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700, fontSize: 15 }}>{room?.host?.nick ?? '?'}</div>
+              <div style={{ fontWeight: 700, fontSize: 15, textTransform: 'uppercase' }}>{room?.host?.nick ?? '?'}</div>
               <div style={{ fontSize: 12, color: 'var(--gold-2)', fontWeight: 600 }}>Host · pronto</div>
             </div>
             <Icon name="check" size={20} color="var(--clean)" />
@@ -123,7 +123,7 @@ export function WaitingScreen() {
                   <div className="b-spin" style={{ width: 20, height: 20, borderRadius: '50%', border: '2.5px solid var(--line)', borderTopColor: 'var(--gold)' }} />
                 </div>}
             <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700, fontSize: 15, color: guestHere ? 'var(--ink)' : 'var(--ink-dim)' }}>
+              <div style={{ fontWeight: 700, fontSize: 15, color: guestHere ? 'var(--ink)' : 'var(--ink-dim)', textTransform: guestHere ? 'uppercase' : 'none' }}>
                 {guestHere ? room!.guest!.nick : 'In attesa dell\'avversario…'}
               </div>
               <div style={{ fontSize: 12, color: 'var(--ink-mut)' }}>{guestHere ? 'Entrato · pronto' : 'Sta arrivando'}</div>
@@ -236,7 +236,7 @@ function InviteSheet({ roomCode, myId, onClose, onInvited }: InviteSheetProps) {
                   borderRadius: '50%', background: 'var(--clean)', border: '2px solid var(--surface)' }} />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700, fontSize: 14.5 }}>{u.nick}</div>
+                <div style={{ fontWeight: 700, fontSize: 14.5, textTransform: 'uppercase' }}>{u.nick}</div>
                 <div style={{ fontSize: 12, color: 'var(--ink-mut)' }}>Disponibile</div>
               </div>
               <button className="btn btn-gold"

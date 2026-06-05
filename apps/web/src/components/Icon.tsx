@@ -37,23 +37,21 @@ export function Icon({ name, size = 22, color = 'currentColor', stroke = 2 }: Pr
 }
 
 interface AvatarProps { name?: string; size?: number; ring?: boolean; you?: boolean; }
-export function Avatar({ name = '?', size = 44, ring, you }: AvatarProps) {
-  const initials = name.split(' ').map((s) => s[0]).join('').slice(0, 2).toUpperCase();
-  const hue = [...name].reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
-  const bg = you
-    ? 'linear-gradient(150deg, var(--gold), var(--gold-2))'
-    : `linear-gradient(150deg, oklch(0.62 0.10 ${hue}), oklch(0.46 0.09 ${(hue + 40) % 360}))`;
+export function Avatar({ name = '?', size = 44, ring }: AvatarProps) {
+  // una sola lettera iniziale, il più grande possibile, su sfondo gold dell'app
+  const initial = (name.trim()[0] ?? '?').toUpperCase();
   return (
     <div style={{
-      width: size, height: size, borderRadius: '50%', flexShrink: 0, background: bg,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      color: you ? 'oklch(0.24 0.04 80)' : '#fff', fontWeight: 800,
-      fontFamily: 'var(--font-disp)', fontSize: size * 0.40,
+      width: size, height: size, borderRadius: '50%', flexShrink: 0,
+      background: 'linear-gradient(150deg, var(--gold), var(--gold-2))',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+      color: 'oklch(0.24 0.04 80)', fontWeight: 800,
+      fontFamily: 'var(--font-disp)', fontSize: size * 0.66, lineHeight: 1,
       boxShadow: 'var(--sh-1)',
-      border: ring ? '2.5px solid var(--gold)' : '2px solid oklch(1 0 0 / 0.12)',
+      border: ring ? '2.5px solid var(--gold)' : '2px solid oklch(1 0 0 / 0.18)',
       boxSizing: 'border-box',
     }}>
-      {initials}
+      {initial}
     </div>
   );
 }
