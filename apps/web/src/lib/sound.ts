@@ -82,16 +82,9 @@ function shuffleNoise(vol = 0.18, dur = 0.06, delay = 0): void {
 }
 
 export const sfx = {
-  /** Tick del timer: sottile a tempo pieno, urgente negli ultimi 10s */
-  tick(secondsLeft: number): void {
-    if (secondsLeft <= 10) {
-      // ultimi 10s: click secco + tono acuto crescente
-      click(0.10);
-      tone(880 + (10 - secondsLeft) * 40, 0.05, 'square', 0.08);
-    } else {
-      // tick sottile
-      click(0.045);
-    }
+  /** Tick del timer (dal vecchio progetto): sine 660Hz, 900Hz quando urgente (≤10s). */
+  tick(urgent: boolean): void {
+    tone(urgent ? 900 : 660, 0.09, 'sine', 0.13);
   },
   /** Singola carta distribuita: fruscio di volo + click morbido all'atterraggio. */
   dealCard(pitch = 1): void {

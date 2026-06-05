@@ -28,20 +28,32 @@ export function TableScreen() {
   const [sort, setSort] = useState<'suit' | 'rank'>('suit');
   const [showSettings, setShowSettings] = useState(false);
 
-  // Tick ogni secondo: forza il re-render + suono timer
+  // Re-render ogni secondo per far scorrere la barra del tempo
   const [, setTick] = useState(0);
   const viewRef = useRef(view);
   viewRef.current = view;
   useEffect(() => {
-    const id = setInterval(() => {
-      setTick((t) => (t + 1) % 60);
-      const v = viewRef.current;
-      if (v && (v.phase === 'draw' || v.phase === 'play')) {
-        const sec = Math.max(0, 60 - Math.floor((Date.now() - v.turnStart) / 1000));
-        sfx.tick(sec);
-      }
-    }, 1000);
+    const id = setInterval(() => setTick((t) => (t + 1) % 60), 1000);
     return () => clearInterval(id);
+  }, []);
+
+  // Suono timer (dal vecchio progetto): solo nel MIO turno, cadenza che accelera
+  // 1s sopra i 10s → 0.5s sotto i 10s → 0.25s sotto i 5s.
+  useEffect(() => {
+    let id: ReturnType<typeof setTimeout>;
+    function loop() {
+      const v = viewRef.current;
+      let next = 1000;
+      if (v && v.turn === v.you && (v.phase === 'draw' || v.phase === 'play')) {
+        const remaining = Math.max(0, 60000 - (Date.now() - v.turnStart));
+        const urgent = remaining <= 10000;
+        sfx.tick(urgent);
+        next = remaining > 10000 ? 1000 : remaining > 5000 ? 500 : 250;
+      }
+      id = setTimeout(loop, next);
+    }
+    id = setTimeout(loop, 1000);
+    return () => clearTimeout(id);
   }, []);
 
   // Disabilita la transizione CSS del timer per un frame quando cambia il turno,
