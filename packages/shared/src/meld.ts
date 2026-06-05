@@ -143,7 +143,8 @@ export function canonicalizeMeld(cards: Card[]): Card[] {
     const baseRank = rest[0]?.rank ?? twos[0]?.rank;
     const nat2 = twos.filter((c) => c.rank === baseRank);
     const wild2 = twos.filter((c) => c.rank !== baseRank);
-    return [...rest, ...nat2, ...wild2, ...jokers];
+    // wild sempre all'estremo basso (prima posizione), naturali dopo
+    return [...jokers, ...wild2, ...rest, ...nat2];
   }
 
   // ── SEQUENZA ──────────────────────────────────────────────────────────────
