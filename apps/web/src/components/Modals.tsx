@@ -1,7 +1,7 @@
 /* ============================================================
    Modali stile-sito: impostazioni in partita + popup abbandono
    ============================================================ */
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { soundEnabled, setSoundEnabled, vibrationEnabled, setVibrationEnabled } from '../lib/sound.js';
 import { enablePush, pushSupported } from '../lib/push.js';
 import { Avatar } from './Icon.js';
@@ -146,6 +146,14 @@ export function ProfilePopup({ nick, username, isGuest, onLogout, onClose }: {
 }
 
 export function AbandonedPopup({ onClose }: { onClose: () => void }) {
+  // dopo 2 secondi torna automaticamente alla home (una sola volta)
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  useEffect(() => {
+    const id = setTimeout(() => closeRef.current(), 2000);
+    return () => clearTimeout(id);
+  }, []);
+
   return (
     <div style={overlayStyle}>
       <div style={cardStyle}>
