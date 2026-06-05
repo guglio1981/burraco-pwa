@@ -13,7 +13,7 @@ import { Icon } from '../components/Icon.js';
 import { LtCInner, LtMeldPile, LtPozzoPile } from '../components/TableComponents.tsx';
 import { SettingsSheet } from '../components/Modals.js';
 import { DiscardPeekPopup, HandViewerSheet, useLongPress } from '../components/TableModals.js';
-import { flyGhost, flyBlock, flipEl, glowEl, bounceEl, pingEl } from '../lib/animations.js';
+import { flyGhost, flyRect, flyBlock, flipEl, glowEl, bounceEl, pingEl } from '../lib/animations.js';
 import { sfx } from '../lib/sound.js';
 
 const MODE_LABELS: Record<string, string> = { fast: 'Mod. veloce', '1005': 'Punti 1005', '2005': 'Punti 2005' };
@@ -186,7 +186,8 @@ export function TableScreen() {
           // l'avversario prende dalla pila scarti: scarti → sua mano
           flyGhost(discardRef.current, oppBarRef.current, { duration: 240, arc: -34 });
         } else if (action === 'discard' && oppBarRef.current && discardRef.current) {
-          flyGhost(oppBarRef.current, discardRef.current, { duration: 200 });
+          const t = discardLandingRect();
+          if (t) flyRect(oppBarRef.current.getBoundingClientRect(), t, { duration: 220 });
           bounceEl(discardRef.current);
         } else if (action === 'meld' || action === 'add_to_meld') {
           // l'avversario cala: sua mano → sue scale
@@ -226,20 +227,21 @@ export function TableScreen() {
     ? [hand]
     : [hand.slice(0, Math.ceil(hand.length / 2)), hand.slice(Math.ceil(hand.length / 2))];
 
-  // Layout riga mano: senza sovrapposizione se le carte ci stanno, altrimenti
-  // sovrapposizione che occupa esattamente tutta la larghezza disponibile.
-  const CARD_W = 46, CARD_GAP = 3, MIN_VIS = 18;
-  function rowLayout(n: number): { mr: number; justify: string } {
-    if (n <= 1) return { mr: 0, justify: 'flex-start' };
+  // Layout riga mano. `vis` = striscia visibile per carta.
+  // Le carte NON si tagliano mai a destra: se non ci stanno si sovrappongono di più
+  // (anche fino a diventare illeggibili → in quel caso il tap apre il popup "Le tue carte").
+  const CARD_W = 46, CARD_GAP = 3, READABLE_MIN = 17;
+  function rowLayout(n: number): { mr: number; justify: string; vis: number } {
+    if (n <= 1) return { mr: 0, justify: 'flex-start', vis: CARD_W };
     const avail = handW || 360;
     const fullW = n * CARD_W + (n - 1) * CARD_GAP;
     if (fullW <= avail) {
       // carte poche: completamente visibili, accostate da sinistra senza spazi
-      return { mr: CARD_GAP, justify: 'flex-start' };
+      return { mr: CARD_GAP, justify: 'flex-start', vis: CARD_W };
     }
-    // carte molte: sovrapposizione che riempie tutta la riga
-    const vis = Math.max(MIN_VIS, (avail - CARD_W) / (n - 1));
-    return { mr: -(CARD_W - vis), justify: 'flex-start' };
+    // carte molte: sovrapposizione che riempie ESATTAMENTE la riga (mai overflow/taglio)
+    const vis = (avail - CARD_W) / (n - 1);
+    return { mr: -(CARD_W - vis), justify: 'flex-start', vis };
   }
 
   // Azioni + animazioni + suoni
@@ -281,13 +283,22 @@ export function TableScreen() {
       return;
     }
     const el = document.querySelector<HTMLElement>(`[data-card-id="${sel[0]}"]`);
-    if (el && discardRef.current) {
-      flyGhost(el, discardRef.current, { duration: 220 });
-      bounceEl(discardRef.current);
+    const target = discardLandingRect();
+    if (el && target) {
+      flyRect(el.getBoundingClientRect(), target, { duration: 220 });
+      if (discardRef.current) bounceEl(discardRef.current);
     }
     sfx.discard();
     wsClient.move({ type: 'DISCARD', cardId: sel[0]! });
     store.clearSelection();
+  }
+  // Rettangolo dove atterra la carta scartata = estremo DESTRO del ventaglio scarti (carta più recente)
+  function discardLandingRect(): DOMRect | null {
+    const el = discardRef.current;
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    const W = 46, H = 66;
+    return new DOMRect(r.right - W, r.top + (r.height - H) / 2, W, H);
   }
   // Tap sull'area degli scarti: in pesca = prendi dagli scarti; in gioco = scarta la carta selezionata
   function onDiscardZone() {
@@ -397,11 +408,13 @@ export function TableScreen() {
                 {view.discard.length === 0
                   ? <div className="lt-dis-empty">vuoto</div>
                   : (() => {
-                      // TUTTE le carte a ventaglio: sovrapposizione adattiva per stare nel ventaglio
+                      // TUTTE le carte a ventaglio: usa tutto lo spazio fino al bordo destro
+                      // (lasciando margine per il badge del numero totale).
                       const all = view.discard;
-                      const CARD_W = 46, FAN_MAX = 200;
-                      const VIS = all.length <= 1 ? 0 : Math.min(20, (FAN_MAX - CARD_W) / (all.length - 1));
-                      const totalW = CARD_W + VIS * (all.length - 1);
+                      const DW = 46;
+                      const FAN_MAX = Math.max(160, (typeof window !== 'undefined' ? window.innerWidth : 360) - 104);
+                      const VIS = all.length <= 1 ? 0 : Math.min(20, (FAN_MAX - DW) / (all.length - 1));
+                      const totalW = DW + VIS * (all.length - 1);
                       return (
                         <div style={{ position: 'relative', width: totalW, height: 66 }}>
                           {all.map((c, i) => (
@@ -474,7 +487,8 @@ export function TableScreen() {
             </div>
             <div ref={handRef} className="lt-handscroll" {...handLP.handlers}>
               {rows.map((row, ri) => {
-                const { mr, justify } = rowLayout(row.length);
+                const { mr, justify, vis } = rowLayout(row.length);
+                const unreadable = vis < READABLE_MIN;
                 return (
                   <div className="lt-hand-row" key={ri} style={{ justifyContent: justify }}>
                     {row.map((c, ci) => {
@@ -483,7 +497,11 @@ export function TableScreen() {
                         <div key={c.id} data-card-id={c.id}
                           className={`lt-card ${suitCls(c)}${sel.includes(c.id) ? ' selected' : ''}${isDrawn ? ' drawn' : ''}`}
                           style={{ marginRight: ci === row.length - 1 ? 0 : mr }}
-                          onClick={() => { if (handLP.fired.current) { handLP.fired.current = false; return; } if (myPhase === 'play') toggle(c.id); }}>
+                          onClick={() => {
+                            if (handLP.fired.current) { handLP.fired.current = false; return; }
+                            if (unreadable) { setShowHandViewer(true); return; } // carte troppo sovrapposte → apri viewer
+                            if (myPhase === 'play') toggle(c.id);
+                          }}>
                           <LtCInner c={c} />
                         </div>
                       );
