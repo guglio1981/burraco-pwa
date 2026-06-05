@@ -51,6 +51,7 @@ export function VictoryScreen() {
         onState: (v) => store.setGameView(v),
         onRoom: (r) => store.setRoom(r),
         onError: (e) => store.showToast(e),
+        onAbandoned: () => store.setOpponentLeft(true),
       });
       wsClient.subscribe(room.id);
       store.setScreen('waiting');

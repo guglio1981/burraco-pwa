@@ -53,6 +53,7 @@ export function HomeScreen() {
         onState: (v) => store.setGameView(v),
         onRoom: (r) => store.setRoom(r),
         onError: (e) => store.showToast(e),
+        onAbandoned: () => store.setOpponentLeft(true),
       });
       wsClient.subscribe(room.id);
       store.setScreen('waiting');
@@ -74,6 +75,7 @@ export function HomeScreen() {
         onState: (v) => store.setGameView(v),
         onRoom: (r) => store.setRoom(r),
         onError: (e) => store.showToast(e),
+        onAbandoned: () => store.setOpponentLeft(true),
       });
       wsClient.subscribe(room.id);
       store.setScreen('waiting');
