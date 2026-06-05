@@ -21,10 +21,15 @@ export function flyGhost(fromEl: Element, toEl: Element, opts: FlyOpts = {}): vo
 export function flyRect(from: DOMRect, to: DOMRect, opts: FlyOpts = {}): void {
   const { duration = 240, dorso = false, arc = -36, rotate = 9, delay = 0, onEnd } = opts;
 
-  const w = Math.max(from.width, 46);
-  const h = Math.max(from.height, 66);
-  const dx = to.left + to.width / 2 - (from.left + w / 2);
-  const dy = to.top + to.height / 2 - (from.top + h / 2);
+  // Il fantasma è SEMPRE grande come una carta (46×66), centrato sull'elemento di partenza.
+  // (Se partisse dall'intera barra avversario diventerebbe un enorme rettangolo bianco.)
+  const w = 46, h = 66;
+  const fromCx = from.left + from.width / 2;
+  const fromCy = from.top + from.height / 2;
+  const fX = fromCx - w / 2;
+  const fY = fromCy - h / 2;
+  const dx = to.left + to.width / 2 - fromCx;
+  const dy = to.top + to.height / 2 - fromCy;
 
   const ghost = document.createElement('div');
   Object.assign(ghost.style, {
@@ -33,8 +38,8 @@ export function flyRect(from: DOMRect, to: DOMRect, opts: FlyOpts = {}): void {
     pointerEvents: 'none',
     width: `${w}px`,
     height: `${h}px`,
-    left: `${from.left}px`,
-    top: `${from.top}px`,
+    left: `${fX}px`,
+    top: `${fY}px`,
     borderRadius: '6px',
     boxShadow: '0 6px 20px rgba(0,0,0,.6)',
     willChange: 'transform',
