@@ -342,20 +342,21 @@ export function TableScreen() {
                 {view.discard.length === 0
                   ? <div className="lt-dis-empty">vuoto</div>
                   : (() => {
-                      // mostra max 5 carte sovrapposte a ventaglio, la più recente in cima
-                      const visible = view.discard.slice(-5);
-                      const CARD_W = 46, VIS = 20;
-                      const totalW = CARD_W + VIS * (visible.length - 1);
+                      // TUTTE le carte a ventaglio: sovrapposizione adattiva per stare nel ventaglio
+                      const all = view.discard;
+                      const CARD_W = 46, FAN_MAX = 200;
+                      const VIS = all.length <= 1 ? 0 : Math.min(20, (FAN_MAX - CARD_W) / (all.length - 1));
+                      const totalW = CARD_W + VIS * (all.length - 1);
                       return (
                         <div style={{ position: 'relative', width: totalW, height: 66 }}>
-                          {visible.map((c, i) => (
+                          {all.map((c, i) => (
                             <div key={c.id}
                               className={`lt-card ${suitCls(c)}`}
                               style={{ position: 'absolute', left: i * VIS, top: 0, zIndex: i + 1 }}>
                               <LtCInner c={c} />
                             </div>
                           ))}
-                          {view.discard.length > 0 && <div className="lt-disbadge" style={{ zIndex: 10 }}>{view.discard.length}</div>}
+                          <div className="lt-disbadge" style={{ zIndex: 100 }}>{all.length}</div>
                         </div>
                       );
                     })()

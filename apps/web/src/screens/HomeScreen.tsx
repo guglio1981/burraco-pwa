@@ -89,21 +89,17 @@ export function HomeScreen() {
   return (
     <div className="b-screen felt-bg">
       <div style={{ flex: 1, overflowY: 'auto', padding: '60px 20px 28px' }}>
-        {/* top bar — tocca per aprire il profilo */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 26 }}>
+        {/* top bar — avatar/nome utente in alto a destra, tocca per aprire il profilo */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: 26 }}>
           <button onClick={() => setShowProfile(true)}
-            style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}>
-            <Avatar name={user?.nick ?? '?'} you size={42} />
+            style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'right' }}>
             <div>
               <div style={{ fontWeight: 700, fontSize: 14.5, color: 'var(--ink)' }}>{user?.nick ?? 'Ospite'}</div>
               <div style={{ fontSize: 11.5, color: 'var(--gold-2)', fontWeight: 600 }}>
                 {user?.isGuest ? 'Ospite' : user?.username ? `@${user.username}` : ''}
               </div>
             </div>
-          </button>
-          <button onClick={() => setShowProfile(true)} aria-label="Profilo"
-            style={{ background: 'oklch(0.40 0.02 168 / 0.4)', border: '1px solid var(--line)', borderRadius: 12, width: 40, height: 40, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ink)' }}>
-            <Icon name="gear" size={20} />
+            <Avatar name={user?.nick ?? '?'} you size={42} />
           </button>
         </div>
 
