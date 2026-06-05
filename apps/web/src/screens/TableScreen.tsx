@@ -183,8 +183,16 @@ export function TableScreen() {
         if (action === 'draw_deck' && deckRef.current && oppBarRef.current) {
           flyGhost(deckRef.current, oppBarRef.current, { dorso: true, duration: 220 });
         } else if (action === 'take_discard' && discardRef.current && oppBarRef.current) {
-          // l'avversario prende dalla pila scarti: scarti → sua mano
-          flyGhost(discardRef.current, oppBarRef.current, { duration: 240, arc: -34 });
+          // l'avversario prende dalla pila scarti: ogni carta vola individualmente verso di lui
+          const cardEls = [...discardRef.current.querySelectorAll<HTMLElement>('.lt-card')];
+          const toRect = oppBarRef.current.getBoundingClientRect();
+          if (cardEls.length) {
+            const rects = cardEls.map((el) => el.getBoundingClientRect());
+            const stagger = Math.min(45, Math.max(20, Math.round(380 / rects.length)));
+            rects.forEach((r, i) => setTimeout(() => flyRect(r, toRect, { duration: 260, arc: -34, rotate: 7 }), i * stagger));
+          } else {
+            flyGhost(discardRef.current, oppBarRef.current, { duration: 240, arc: -34 });
+          }
         } else if (action === 'discard' && oppBarRef.current && discardRef.current) {
           const t = discardLandingRect();
           if (t) flyRect(oppBarRef.current.getBoundingClientRect(), t, { duration: 220 });
@@ -256,8 +264,13 @@ export function TableScreen() {
   }
   function takeDiscard() {
     if (myPhase !== 'draw' || !view!.discard.length) return;
-    if (discardRef.current && handRef.current) {
-      flyGhost(discardRef.current, handRef.current, { duration: 200 });
+    // animazione reale: ogni carta degli scarti vola individualmente nella mano (cascata)
+    const cardEls = discardRef.current ? [...discardRef.current.querySelectorAll<HTMLElement>('.lt-card')] : [];
+    if (cardEls.length && handRef.current) {
+      const toRect = handRef.current.getBoundingClientRect();
+      const rects = cardEls.map((el) => el.getBoundingClientRect()); // cattura PRIMA che lo stato cambi
+      const stagger = Math.min(45, Math.max(20, Math.round(380 / rects.length)));
+      rects.forEach((r, i) => setTimeout(() => flyRect(r, toRect, { duration: 260, arc: -34, rotate: 7 }), i * stagger));
     }
     sfx.draw();
     wsClient.move({ type: 'TAKE_DISCARD' });
