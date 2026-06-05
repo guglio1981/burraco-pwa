@@ -271,7 +271,7 @@ export function TableScreen() {
           <div className="lt-opp-badge" style={{ marginLeft: 8 }}>{view.oppHandCount}</div>
           <div className="lt-spacer" />
           <button className="lt-icon-btn" aria-label="Impostazioni">
-            <Icon name="gear" size={18} color="rgba(245,240,232,.6)" />
+            <Icon name="gear" size={18} color="#fff" />
           </button>
         </div>
 

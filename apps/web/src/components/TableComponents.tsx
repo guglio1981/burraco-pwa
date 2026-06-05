@@ -6,7 +6,12 @@ import { burracoType } from '@burraco/shared';
 /* ---- Inner di una carta tavolo ---- */
 export function LtCInner({ c }: { c: Card }) {
   if (c.joker) {
-    return <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, color: '#7b1fa2', fontWeight: 700 }}>★</div>;
+    return (
+      <>
+        <div className="lt-c-tl" style={{ color: '#7b1fa2', fontSize: 13, fontWeight: 700, lineHeight: 1 }}>★</div>
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, color: '#7b1fa2', fontWeight: 700 }}>★</div>
+      </>
+    );
   }
   return (
     <>
