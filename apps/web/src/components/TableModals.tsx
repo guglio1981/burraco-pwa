@@ -126,21 +126,31 @@ export function HandViewerSheet(props: {
   const { hand, selectedIds, drawnId, onToggle, sort, setSort, msg, msgCls, myTurn,
     timerShow, timerFrac, timerOpp, timerAnimate, onClose } = props;
 
-  // trascinamento verticale con maniglia
+  // trascinamento verticale con maniglia — può salire fino al bordo SUPERIORE dello schermo
+  const boxRef = useRef<HTMLDivElement>(null);
+  const dragYRef = useRef(0);
   const [dragY, setDragY] = useState(0);
+  const setDrag = (v: number) => { dragYRef.current = v; setDragY(v); };
   const drag = useRef<{ startY: number; base: number } | null>(null);
-  const onDown = (e: React.PointerEvent) => { drag.current = { startY: e.clientY, base: dragY }; (e.currentTarget as Element).setPointerCapture(e.pointerId); };
+  const onDown = (e: React.PointerEvent) => { drag.current = { startY: e.clientY, base: dragYRef.current }; (e.currentTarget as Element).setPointerCapture(e.pointerId); };
   const onMove = (e: React.PointerEvent) => {
     if (!drag.current) return;
-    const ny = drag.current.base + (e.clientY - drag.current.startY);
-    setDragY(Math.max(-Math.round(window.innerHeight * 0.6), Math.min(0, ny)));
+    let ny = drag.current.base + (e.clientY - drag.current.startY);
+    const box = boxRef.current;
+    if (box) {
+      const restTop = box.getBoundingClientRect().top - dragYRef.current; // posizione del top a dragY=0
+      ny = Math.max(-restTop, Math.min(0, ny)); // top del box non oltre il bordo superiore (0)
+    } else {
+      ny = Math.max(-(window.innerHeight - 60), Math.min(0, ny));
+    }
+    setDrag(ny);
   };
   const onUp = (e: React.PointerEvent) => { drag.current = null; try { (e.currentTarget as Element).releasePointerCapture(e.pointerId); } catch { /* noop */ } };
 
   return (
     <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 2000, transform: `translateY(${dragY}px)`,
       padding: '0 12px calc(12px + env(safe-area-inset-bottom,0px))', pointerEvents: 'none' }}>
-      <div style={{ ...boxStyle, maxWidth: 460, margin: '0 auto', pointerEvents: 'auto', display: 'flex', flexDirection: 'column', maxHeight: '70vh' }}>
+      <div ref={boxRef} style={{ ...boxStyle, maxWidth: 460, margin: '0 auto', pointerEvents: 'auto', display: 'flex', flexDirection: 'column', maxHeight: '70vh' }}>
         {/* intera intestazione trascinabile (maniglia + titolo) — area ampia per afferrare facile */}
         <div onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
           style={{ cursor: 'grab', touchAction: 'none', flexShrink: 0, padding: '6px 14px 8px' }}>
