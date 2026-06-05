@@ -170,13 +170,20 @@ export function TableScreen() {
     ? [hand]
     : [hand.slice(0, Math.ceil(hand.length / 2)), hand.slice(Math.ceil(hand.length / 2))];
 
-  // Sovrapposizione: striscia sinistra visibile per carta (max overlap mantenendo numero+seme leggibili)
-  const CARD_W = 46, TIGHT = 20, MIN_VIS = 18;
-  function rowOverlap(n: number): number {
-    if (n <= 1) return 0;
+  // Layout riga mano: senza sovrapposizione se le carte ci stanno, altrimenti
+  // sovrapposizione che occupa esattamente tutta la larghezza disponibile.
+  const CARD_W = 46, CARD_GAP = 3, MIN_VIS = 18;
+  function rowLayout(n: number): { mr: number; justify: string } {
+    if (n <= 1) return { mr: 0, justify: 'flex-start' };
     const avail = handW || 360;
-    const vis = Math.max(MIN_VIS, Math.min(TIGHT, (avail - CARD_W) / (n - 1)));
-    return -(CARD_W - vis); // margin-right negativo
+    const fullW = n * CARD_W + (n - 1) * CARD_GAP;
+    if (fullW <= avail) {
+      // carte poche: completamente visibili, accostate da sinistra senza spazi
+      return { mr: CARD_GAP, justify: 'flex-start' };
+    }
+    // carte molte: sovrapposizione che riempie tutta la riga
+    const vis = Math.max(MIN_VIS, (avail - CARD_W) / (n - 1));
+    return { mr: -(CARD_W - vis), justify: 'flex-start' };
   }
 
   // Azioni + animazioni + suoni
@@ -393,9 +400,9 @@ export function TableScreen() {
             </div>
             <div ref={handRef} className="lt-handscroll">
               {rows.map((row, ri) => {
-                const mr = rowOverlap(row.length);
+                const { mr, justify } = rowLayout(row.length);
                 return (
-                  <div className="lt-hand-row" key={ri}>
+                  <div className="lt-hand-row" key={ri} style={{ justifyContent: justify }}>
                     {row.map((c, ci) => {
                       const isDrawn = c.id === drawnCardIdRef.current;
                       return (
