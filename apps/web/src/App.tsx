@@ -33,7 +33,7 @@ export function App() {
         onState: (v) => store.setGameView(v),
         onRoom: (r) => store.setRoom(r),
         onError: (e) => store.showToast(e),
-        onAbandoned: () => store.setOpponentLeft(true),
+        onAbandoned: () => store.notifyOpponentLeft(),
       });
 
       const pending = getPendingJoin();

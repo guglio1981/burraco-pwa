@@ -31,6 +31,8 @@ export interface AppState {
   toggleCard: (id: string) => void;
   clearSelection: () => void;
   setOpponentLeft: (v: boolean) => void;
+  /** Notifica abbandono avversario: mostra popup solo se sono ancora in partita */
+  notifyOpponentLeft: () => void;
   logout: () => void;
 }
 
@@ -70,5 +72,10 @@ export const useStore = create<AppState>((set, get) => ({
   })),
   clearSelection: () => set({ selectedIds: [] }),
   setOpponentLeft: (opponentLeft) => set({ opponentLeft }),
+  notifyOpponentLeft: () => {
+    const s = get().screen;
+    // ignora se sono già fuori dalla partita (login/home) — es. dopo aver abbandonato io
+    if (s !== 'login' && s !== 'home') set({ opponentLeft: true });
+  },
   logout: () => set({ user: null, room: null, gameView: null, screen: 'login', selectedIds: [], opponentLeft: false }),
 }));
