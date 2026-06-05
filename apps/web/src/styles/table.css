@@ -150,5 +150,5 @@
 /* mano (2 righe) */
 .lt-handscroll { padding: 8px 8px 6px; display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; }
 .lt-hand-row { display: flex; align-items: flex-end; flex-wrap: nowrap; justify-content: center; }
-.lt-hand-row .lt-card { position: relative; transition: transform .18s, filter .18s; }
-.lt-hand-row .lt-card.selected { transform: translateY(-12px); filter: brightness(.6) grayscale(.25); z-index: 10; }
+.lt-hand-row .lt-card { position: relative; transition: filter .15s; }
+.lt-hand-row .lt-card.selected { filter: brightness(.65) grayscale(.4); }
