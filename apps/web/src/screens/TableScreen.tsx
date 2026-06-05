@@ -12,6 +12,7 @@ import { clearActiveRoom } from '../lib/session.js';
 import { Icon } from '../components/Icon.js';
 import { LtCInner, LtMeldPile, LtPozzoPile } from '../components/TableComponents.tsx';
 import { SettingsSheet } from '../components/Modals.js';
+import { DiscardPeekPopup, HandViewerSheet, useLongPress } from '../components/TableModals.js';
 import { flyGhost, flyBlock, flipEl, glowEl, bounceEl, pingEl } from '../lib/animations.js';
 import { sfx } from '../lib/sound.js';
 
@@ -28,6 +29,10 @@ export function TableScreen() {
   const sel = store.selectedIds;
   const [sort, setSort] = useState<'suit' | 'rank'>('suit');
   const [showSettings, setShowSettings] = useState(false);
+  const [showDiscardPeek, setShowDiscardPeek] = useState(false);
+  const [showHandViewer, setShowHandViewer] = useState(false);
+  const discardLP = useLongPress(() => { if (view && view.discard.length) setShowDiscardPeek(true); });
+  const handLP = useLongPress(() => setShowHandViewer(true));
 
   // Re-render ogni secondo per far scorrere la barra del tempo
   const [, setTick] = useState(0);
@@ -386,7 +391,8 @@ export function TableScreen() {
               </div>
               <div className="lt-plbl">Mazzo</div>
             </div>
-            <div className="lt-pw" onClick={onDiscardZone}>
+            <div className="lt-pw" {...discardLP.handlers}
+              onClick={() => { if (discardLP.fired.current) { discardLP.fired.current = false; return; } onDiscardZone(); }}>
               <div ref={discardRef} className={'lt-disw lt-disw-fan' + (((myPhase === 'draw' && view.discard.length) || (myPhase === 'play' && sel.length === 1 && !selIsBlocked)) ? ' hot' : '')}>
                 {view.discard.length === 0
                   ? <div className="lt-dis-empty">vuoto</div>
@@ -463,7 +469,7 @@ export function TableScreen() {
             <div className="lt-msg-bar">
               <div className={`lt-msgbar ${msgCls}`}>{msg}</div>
             </div>
-            <div ref={handRef} className="lt-handscroll">
+            <div ref={handRef} className="lt-handscroll" {...handLP.handlers}>
               {rows.map((row, ri) => {
                 const { mr, justify } = rowLayout(row.length);
                 return (
@@ -474,7 +480,7 @@ export function TableScreen() {
                         <div key={c.id} data-card-id={c.id}
                           className={`lt-card ${suitCls(c)}${sel.includes(c.id) ? ' selected' : ''}${isDrawn ? ' drawn' : ''}`}
                           style={{ marginRight: ci === row.length - 1 ? 0 : mr }}
-                          onClick={() => myPhase === 'play' && toggle(c.id)}>
+                          onClick={() => { if (handLP.fired.current) { handLP.fired.current = false; return; } if (myPhase === 'play') toggle(c.id); }}>
                           <LtCInner c={c} />
                         </div>
                       );
@@ -497,6 +503,23 @@ export function TableScreen() {
             store.setRoom(null);
             store.setScreen('home');
           }}
+        />
+      )}
+      {showDiscardPeek && (
+        <DiscardPeekPopup cards={view.discard} onClose={() => setShowDiscardPeek(false)} />
+      )}
+      {showHandViewer && (
+        <HandViewerSheet
+          hand={hand}
+          selectedIds={sel}
+          drawnId={drawnCardIdRef.current}
+          onToggle={(id) => { if (myPhase === 'play') toggle(id); }}
+          sort={sort}
+          setSort={setSort}
+          msg={msg}
+          msgCls={msgCls}
+          myTurn={myPhase !== 'wait'}
+          onClose={() => setShowHandViewer(false)}
         />
       )}
     </div>
