@@ -67,6 +67,7 @@ function CardRows({ cards, selectedIds, drawnId, onCardClick }: {
 const boxStyle: React.CSSProperties = {
   background: 'oklch(0.20 0.022 168 / 0.98)', border: '1px solid var(--line)', borderRadius: 16,
   boxShadow: 'var(--sh-2)',
+  userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' as React.CSSProperties['WebkitTouchCallout'],
 };
 const closeBtnStyle: React.CSSProperties = {
   background: 'rgba(245,197,24,.15)', border: '1px solid var(--line)', borderRadius: 8,
@@ -104,7 +105,7 @@ export function DiscardPeekPopup({ cards, anchorRef, onClose }: {
       width: 'calc(100% - 24px)', maxWidth: 460, padding: 14, overflowY: 'auto', zIndex: 90,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '.04em' }}>
           Pile scarti — {cards.length} carte
         </span>
         <button onClick={onClose} style={closeBtnStyle}>✕</button>
@@ -137,17 +138,19 @@ export function HandViewerSheet(props: {
   const onUp = (e: React.PointerEvent) => { drag.current = null; try { (e.currentTarget as Element).releasePointerCapture(e.pointerId); } catch { /* noop */ } };
 
   return (
-    <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 95, transform: `translateY(${dragY}px)`,
+    <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 2000, transform: `translateY(${dragY}px)`,
       padding: '0 12px calc(12px + env(safe-area-inset-bottom,0px))', pointerEvents: 'none' }}>
       <div style={{ ...boxStyle, maxWidth: 460, margin: '0 auto', pointerEvents: 'auto', display: 'flex', flexDirection: 'column', maxHeight: '70vh' }}>
-        {/* maniglia di trascinamento */}
+        {/* intera intestazione trascinabile (maniglia + titolo) — area ampia per afferrare facile */}
         <div onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
-          style={{ padding: '8px 0 4px', cursor: 'grab', touchAction: 'none', display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
-          <div style={{ width: 42, height: 5, borderRadius: 99, background: 'var(--line)' }} />
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 14px 6px' }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold)', textTransform: 'uppercase' }}>Le tue carte</span>
-          <button onClick={onClose} style={closeBtnStyle}>✕</button>
+          style={{ cursor: 'grab', touchAction: 'none', flexShrink: 0, padding: '6px 14px 8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
+            <div style={{ width: 56, height: 6, borderRadius: 99, background: 'var(--gold-2)', opacity: 0.7 }} />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#fff', textTransform: 'uppercase' }}>Le tue carte</span>
+            <button onClick={onClose} onPointerDown={(e) => e.stopPropagation()} style={closeBtnStyle}>✕</button>
+          </div>
         </div>
         {/* barra del tempo — identica alla pagina */}
         <div className="lt-timer-wrap" style={{ margin: '0 14px' }}>

@@ -14,7 +14,10 @@
   position: absolute; inset: 0; background: var(--s1);
   font-family: 'Josefin Sans', system-ui, sans-serif; color: var(--text);
   display: flex; flex-direction: column; overflow: hidden;
+  /* niente selezione testo / menu contestuale al tocco */
+  user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
 }
+.legacy-table * { -webkit-tap-highlight-color: transparent; }
 
 .lt-safe { height: env(safe-area-inset-top, 0px); min-height: 0; flex-shrink: 0; background: var(--s1); }
 .lt-game { flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; overflow: hidden; }
