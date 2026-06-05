@@ -98,15 +98,18 @@ export function TableScreen() {
   // e confrontiamo con quelli precedenti per trovare la carta nuova
   const prevHandIdsRef = useRef<Set<string>>(new Set());
   const drawnCardIdRef = useRef<string | null>(null);
+  const lastDrawSourceRef = useRef<'deck' | 'discard' | null>(null); // bordo verde SOLO se 'deck'
   useEffect(() => {
     if (!view) return;
     if (view.turn === view.you) {
       if (view.phase === 'play') {
         const nowIds = new Set(view.myHand.map((c) => c.id));
         const newId = [...nowIds].find((id) => !prevHandIdsRef.current.has(id)) ?? null;
-        drawnCardIdRef.current = newId;
+        // evidenzia in verde solo la carta pescata dal MAZZO, non quelle prese dagli scarti
+        drawnCardIdRef.current = lastDrawSourceRef.current === 'deck' ? newId : null;
       } else if (view.phase === 'draw') {
         drawnCardIdRef.current = null;
+        lastDrawSourceRef.current = null;
       }
       prevHandIdsRef.current = new Set(view.myHand.map((c) => c.id));
     }
@@ -255,6 +258,7 @@ export function TableScreen() {
   // Azioni + animazioni + suoni
   function drawDeck() {
     if (myPhase !== 'draw') return;
+    lastDrawSourceRef.current = 'deck';
     if (deckRef.current) glowEl(deckRef.current);
     if (deckRef.current && handRef.current) {
       flyGhost(deckRef.current, handRef.current, { dorso: true, duration: 230 });
@@ -264,6 +268,7 @@ export function TableScreen() {
   }
   function takeDiscard() {
     if (myPhase !== 'draw' || !view!.discard.length) return;
+    lastDrawSourceRef.current = 'discard';
     // animazione reale: ogni carta degli scarti vola individualmente nella mano (cascata)
     const cardEls = discardRef.current ? [...discardRef.current.querySelectorAll<HTMLElement>('.lt-card')] : [];
     if (cardEls.length && handRef.current) {

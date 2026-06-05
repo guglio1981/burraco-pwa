@@ -155,5 +155,7 @@
 /* mano (2 righe) */
 .lt-handscroll { padding: 8px 8px 6px; display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; }
 .lt-hand-row { display: flex; align-items: flex-end; flex-wrap: nowrap; }
-.lt-hand-row .lt-card { position: relative; transition: filter .15s; }
-.lt-hand-row .lt-card.selected { filter: brightness(.65) grayscale(.4); }
+.lt-hand-row .lt-card { position: relative; transition: background .15s; }
+/* carta selezionata: il corpo diventa grigio (tavola E popup), ma i simboli/numeri NON si scuriscono */
+.lt-card.selected { background: #aeaea6; }
+.lt-card.joker-c.selected { background: #c9c9c2; }
