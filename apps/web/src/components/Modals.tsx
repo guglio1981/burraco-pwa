@@ -3,6 +3,8 @@
    ============================================================ */
 import React, { useState } from 'react';
 import { soundEnabled, setSoundEnabled, vibrationEnabled, setVibrationEnabled } from '../lib/sound.js';
+import { enablePush, pushSupported } from '../lib/push.js';
+import { Avatar } from './Icon.js';
 
 const overlayStyle: React.CSSProperties = {
   position: 'fixed', inset: 0, zIndex: 100, display: 'flex',
@@ -74,6 +76,70 @@ export function SettingsSheet({ onClose, onAbandon }: { onClose: () => void; onA
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+export function ProfilePopup({ nick, username, isGuest, onLogout, onClose }: {
+  nick: string; username: string | null; isGuest: boolean; onLogout: () => void; onClose: () => void;
+}) {
+  const supported = pushSupported();
+  const [perm, setPerm] = useState<NotificationPermission>(
+    supported ? Notification.permission : 'denied',
+  );
+  const [busy, setBusy] = useState(false);
+
+  async function activate() {
+    setBusy(true);
+    await enablePush();
+    setPerm(Notification.permission);
+    setBusy(false);
+  }
+
+  const notifLabel = !supported ? 'Non supportate'
+    : perm === 'granted' ? 'Attive'
+    : perm === 'denied' ? 'Bloccate'
+    : 'Non attive';
+  const notifColor = perm === 'granted' ? 'var(--clean, #43a047)' : 'var(--ink-mut)';
+
+  return (
+    <div style={overlayStyle} onClick={onClose}>
+      <div style={cardStyle} onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <h2 className="t-h1" style={{ fontSize: 22 }}>Profilo</h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--ink-mut)', fontSize: 22, cursor: 'pointer', lineHeight: 1 }}>✕</button>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
+          <Avatar name={nick} you size={52} />
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 17, color: 'var(--ink)' }}>{nick}</div>
+            <div style={{ fontSize: 12.5, color: 'var(--gold-2)', fontWeight: 600 }}>
+              {isGuest ? 'Ospite' : username ? `@${username}` : ''}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 2px' }}>
+          <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)' }}>Notifiche</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 13.5, fontWeight: 700, color: notifColor }}>{notifLabel}</span>
+            {supported && perm === 'default' && (
+              <button className="btn" style={{ padding: '6px 12px', fontSize: 12.5, background: 'var(--gold-soft)', color: 'var(--gold)', border: '1px solid oklch(0.81 0.125 86 / 0.4)' }}
+                onClick={activate} disabled={busy}>
+                {busy ? '…' : 'Attiva'}
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div style={{ height: 1, background: 'var(--line-soft)', margin: '8px 0 16px' }} />
+
+        <button className="btn" style={{ width: '100%', background: 'oklch(0.32 0.09 25 / 0.5)', border: '1px solid oklch(0.6 0.16 25 / 0.5)', color: 'oklch(0.85 0.10 25)' }}
+          onClick={onLogout}>
+          Esci
+        </button>
       </div>
     </div>
   );

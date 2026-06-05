@@ -3,7 +3,8 @@ import { api } from '../lib/api.js';
 import { wsClient } from '../lib/ws.js';
 import { useStore } from '../lib/store.js';
 import { getToken, clearToken } from '../lib/session.js';
-import { Avatar, Icon, IconBtn, Toast } from '../components/Icon.js';
+import { Avatar, Icon, Toast } from '../components/Icon.js';
+import { ProfilePopup } from '../components/Modals.js';
 import { APP_VERSION } from '../lib/version.js';
 
 const MODE_SHORT: Record<string, string> = { fast: 'Veloce', '1005': '1005', '2005': '2005' };
@@ -39,9 +40,8 @@ export function HomeScreen() {
   const [mode, setMode] = useState('1005');
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const user = store.user;
-
-  const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 
   async function createRoom() {
     setLoading(true);
@@ -89,9 +89,10 @@ export function HomeScreen() {
   return (
     <div className="b-screen felt-bg">
       <div style={{ flex: 1, overflowY: 'auto', padding: '60px 20px 28px' }}>
-        {/* top bar */}
+        {/* top bar — tocca per aprire il profilo */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 26 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button onClick={() => setShowProfile(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}>
             <Avatar name={user?.nick ?? '?'} you size={42} />
             <div>
               <div style={{ fontWeight: 700, fontSize: 14.5, color: 'var(--ink)' }}>{user?.nick ?? 'Ospite'}</div>
@@ -99,11 +100,11 @@ export function HomeScreen() {
                 {user?.isGuest ? 'Ospite' : user?.username ? `@${user.username}` : ''}
               </div>
             </div>
-          </div>
-          <div style={{ display: 'flex', gap: 9 }}>
-            <IconBtn name="bell" />
-            <IconBtn name="gear" onClick={() => { clearToken(); store.logout(); }} />
-          </div>
+          </button>
+          <button onClick={() => setShowProfile(true)} aria-label="Profilo"
+            style={{ background: 'oklch(0.40 0.02 168 / 0.4)', border: '1px solid var(--line)', borderRadius: 12, width: 40, height: 40, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ink)' }}>
+            <Icon name="gear" size={20} />
+          </button>
         </div>
 
         {/* brand */}
@@ -137,30 +138,36 @@ export function HomeScreen() {
         {/* entra con codice */}
         <div style={{ background: 'oklch(0.255 0.026 168 / 0.85)', border: '1px solid var(--line)', borderRadius: 22, padding: 18, marginTop: 14, boxShadow: 'var(--sh-1)' }}>
           <div className="t-label" style={{ marginBottom: 12 }}>Entra con codice</div>
-          <div style={{ display: 'flex', gap: 7 }}>
-            {[0, 1, 2, 3].map((i) => (
-              <div key={i} style={{ flex: 1, aspectRatio: '1', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'oklch(0.30 0.02 168 / 0.6)', border: '1.5px solid ' + (code[i] ? 'oklch(0.81 0.125 86 / 0.6)' : 'var(--line)'),
-                fontFamily: 'var(--font-disp)', fontWeight: 700, fontSize: 24, color: 'var(--gold)' }}>
-                {code[i] ?? ''}
-              </div>
-            ))}
-          </div>
-          {/* tastierino lettere */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 12, justifyContent: 'center' }}>
-            {ALPHA.split('').map((l) => (
-              <button key={l} onClick={() => setCode((c) => (c + l).slice(0, 4))} style={{ width: 30, height: 34, borderRadius: 8, cursor: 'pointer',
-                background: 'oklch(0.34 0.02 168 / 0.55)', border: '1px solid var(--line-soft)', color: 'var(--ink-mut)', fontWeight: 700, fontSize: 13 }}>
-                {l}
-              </button>
-            ))}
-          </div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-            <button className="btn btn-dark" style={{ flex: '0 0 auto' }} onClick={() => setCode('')}>⌫</button>
-            <button className="btn btn-ghost" style={{ flex: 1, opacity: code.length === 4 ? 1 : .5 }} onClick={joinRoom} disabled={code.length !== 4 || loading}>
-              Entra in partita
-            </button>
-          </div>
+          {/* 4 caselle con input di sistema invisibile sopra (tastiera nativa) */}
+          <label style={{ position: 'relative', display: 'block' }}>
+            <div style={{ display: 'flex', gap: 7 }}>
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} style={{ flex: 1, aspectRatio: '1', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'oklch(0.30 0.02 168 / 0.6)', border: '1.5px solid ' + (code[i] ? 'oklch(0.81 0.125 86 / 0.6)' : 'var(--line)'),
+                  fontFamily: 'var(--font-disp)', fontWeight: 700, fontSize: 24, color: 'var(--gold)' }}>
+                  {code[i] ?? ''}
+                </div>
+              ))}
+            </div>
+            <input
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4))}
+              maxLength={4}
+              autoCapitalize="characters"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+              inputMode="text"
+              aria-label="Codice partita"
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0,
+                border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 16, color: 'transparent' }}
+            />
+          </label>
+          <button className={'btn ' + (code.length === 4 ? 'btn-gold' : 'btn-ghost')}
+            style={{ width: '100%', marginTop: 12, opacity: code.length === 4 && !loading ? 1 : .5 }}
+            onClick={joinRoom} disabled={code.length !== 4 || loading}>
+            <Icon name="cards" size={20} /> Entra in partita
+          </button>
         </div>
 
         <div style={{ textAlign: 'center', marginTop: 22, fontSize: 12, color: 'var(--ink-dim)' }}>
@@ -168,6 +175,15 @@ export function HomeScreen() {
         </div>
       </div>
       <Toast text={store.toast} />
+      {showProfile && (
+        <ProfilePopup
+          nick={user?.nick ?? 'Ospite'}
+          username={user?.username ?? null}
+          isGuest={user?.isGuest ?? false}
+          onClose={() => setShowProfile(false)}
+          onLogout={() => { setShowProfile(false); clearToken(); store.logout(); }}
+        />
+      )}
       <div style={{ position: 'absolute', right: 10, bottom: 8, fontSize: 11, fontWeight: 700,
         color: 'var(--ink-dim)', letterSpacing: '.04em', opacity: 0.7, pointerEvents: 'none', userSelect: 'none' }}>
         {APP_VERSION}
