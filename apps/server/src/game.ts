@@ -111,7 +111,7 @@ export async function nextRoundTx(roomId: string, opts: { now?: number } = {}): 
   });
 }
 
-/** Abbandono: il seat che abbandona perde, l'avversario è dichiarato vincitore. */
+/** Abbandono: il seat che abbandona perde. Rimozione IMMEDIATA di game+room dalla memoria. */
 export async function abandonTx(roomId: string, seat: Seat): Promise<MoveOutcome> {
   return tx(async (client) => {
     const sel = await client.query<{ state: GameState; rev: number }>(
@@ -119,15 +119,30 @@ export async function abandonTx(roomId: string, seat: Seat): Promise<MoveOutcome
       [roomId],
     );
     const row = sel.rows[0];
-    if (!row) return { status: 'error', error: 'Partita non trovata' };
-    const ns: GameState = { ...row.state, phase: 'abandoned', winner: otherSeat(seat), rev: row.state.rev + 1 };
-    await client.query(
-      "UPDATE games SET state = $1::jsonb, rev = $2, status = 'finished', updated_at = now() WHERE room_id = $3",
-      [JSON.stringify(ns), ns.rev, roomId],
-    );
-    await client.query("UPDATE rooms SET status = 'abandoned' WHERE id = $1", [roomId]);
+    // stato sintetizzato per il broadcast (anche se la partita non è in DB)
+    const base = row?.state;
+    const ns: GameState | null = base
+      ? { ...base, phase: 'abandoned', winner: otherSeat(seat), rev: base.rev + 1 }
+      : null;
+    // eliminazione immediata: prima il game (FK), poi la room
+    await client.query('DELETE FROM games WHERE room_id = $1', [roomId]);
+    await client.query('DELETE FROM rooms WHERE id = $1', [roomId]);
+    if (!ns) return { status: 'error', error: 'Partita non trovata' };
     return { status: 'ok', state: ns, rev: ns.rev };
   });
+}
+
+/** Pulizia periodica: elimina partite/stanze inattive da oltre 30 minuti (recupero scaduto). */
+export async function cleanupStale(): Promise<void> {
+  try {
+    // 1) partite senza mosse da >30 min (i game referenziano le room → si cancellano per primi)
+    await query(`DELETE FROM games WHERE updated_at < now() - interval '30 minutes'`);
+    // 2) stanze ora orfane (o lobby mai avviate) più vecchie di 30 min
+    await query(
+      `DELETE FROM rooms WHERE created_at < now() - interval '30 minutes'
+         AND id NOT IN (SELECT room_id FROM games)`,
+    );
+  } catch { /* la pulizia è best-effort */ }
 }
 
 export { buildView };

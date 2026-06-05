@@ -3,6 +3,7 @@ import { api, type OnlineUser } from '../lib/api.js';
 import { useStore } from '../lib/store.js';
 import { Avatar, Icon, IconBtn, Toast } from '../components/Icon.js';
 import { enablePush, pushSupported } from '../lib/push.js';
+import { clearActiveRoom } from '../lib/session.js';
 import { sfx } from '../lib/sound.js';
 
 const MODE_LABEL: Record<string, string> = { fast: 'Veloce', '1005': 'Punti 1005', '2005': 'Punti 2005' };
@@ -65,6 +66,7 @@ export function WaitingScreen() {
 
   function cancel() {
     setCancelling(true);
+    clearActiveRoom();
     store.setRoom(null);
     store.setScreen('home');
   }

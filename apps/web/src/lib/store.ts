@@ -2,6 +2,7 @@
 import { create } from 'zustand';
 import type { PublicView } from '@burraco/shared';
 import type { PublicUser, RoomView } from './api.js';
+import { clearActiveRoom } from './session.js';
 
 export type Screen =
   | 'login'
@@ -77,5 +78,5 @@ export const useStore = create<AppState>((set, get) => ({
     // ignora se sono già fuori dalla partita (login/home) — es. dopo aver abbandonato io
     if (s !== 'login' && s !== 'home') set({ opponentLeft: true });
   },
-  logout: () => set({ user: null, room: null, gameView: null, screen: 'login', selectedIds: [], opponentLeft: false }),
+  logout: () => { clearActiveRoom(); set({ user: null, room: null, gameView: null, screen: 'login', selectedIds: [], opponentLeft: false }); },
 }));

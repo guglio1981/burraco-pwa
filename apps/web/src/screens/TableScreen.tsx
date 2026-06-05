@@ -8,6 +8,7 @@ import type { Card } from '@burraco/shared';
 import { validateMeld, validateAddToMeld } from '@burraco/shared';
 import { wsClient } from '../lib/ws.js';
 import { useStore } from '../lib/store.js';
+import { clearActiveRoom } from '../lib/session.js';
 import { Icon } from '../components/Icon.js';
 import { LtCInner, LtMeldPile, LtPozzoPile } from '../components/TableComponents.tsx';
 import { SettingsSheet } from '../components/Modals.js';
@@ -491,6 +492,7 @@ export function TableScreen() {
           onClose={() => setShowSettings(false)}
           onAbandon={() => {
             wsClient.abandon();
+            clearActiveRoom();
             setShowSettings(false);
             store.setRoom(null);
             store.setScreen('home');

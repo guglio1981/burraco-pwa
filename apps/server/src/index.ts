@@ -9,6 +9,7 @@ import { ENV } from './env.js';
 import { migrate } from './db.js';
 import { GameHub } from './ws.js';
 import { createApiRouter, errorHandler } from './http.js';
+import { cleanupStale } from './game.js';
 
 async function main(): Promise<void> {
   const app = express();
@@ -28,6 +29,10 @@ async function main(): Promise<void> {
     // eslint-disable-next-line no-console
     console.log(`Burraco server in ascolto su :${ENV.PORT} (REST /api, WS /ws)`);
   });
+
+  // pulizia partite/stanze inattive da >30 min: ogni 5 minuti
+  void cleanupStale();
+  setInterval(() => void cleanupStale(), 5 * 60 * 1000);
 }
 
 main().catch((e) => {

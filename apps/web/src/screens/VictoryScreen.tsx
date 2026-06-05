@@ -3,7 +3,7 @@ import { useStore } from '../lib/store.js';
 import { Avatar, Icon } from '../components/Icon.js';
 import { wsClient } from '../lib/ws.js';
 import { api } from '../lib/api.js';
-import { getToken } from '../lib/session.js';
+import { getToken, setActiveRoom, clearActiveRoom } from '../lib/session.js';
 import { sfx } from '../lib/sound.js';
 
 function FinalRow({ name, score, you, win }: { name: string; score: number; you?: boolean; win?: boolean; }) {
@@ -48,6 +48,7 @@ export function VictoryScreen() {
     try {
       const { room } = await api.createRoom(view.mode);
       store.setRoom(room);
+      setActiveRoom(room.id);
       const token = getToken()!;
       wsClient.connect(token, {
         onState: (v) => store.setGameView(v),
@@ -98,7 +99,7 @@ export function VictoryScreen() {
         </div>
 
         <div style={{ width: '100%', maxWidth: 320, display: 'flex', gap: 10, marginTop: 26 }}>
-          <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => { store.setRoom(null); store.setScreen('home'); }}>
+          <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => { clearActiveRoom(); store.setRoom(null); store.setScreen('home'); }}>
             Home
           </button>
           <button className="btn btn-gold" style={{ flex: 1.4 }} onClick={rematch}>

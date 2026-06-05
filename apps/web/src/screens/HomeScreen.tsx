@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { api } from '../lib/api.js';
 import { wsClient } from '../lib/ws.js';
 import { useStore } from '../lib/store.js';
-import { getToken, clearToken } from '../lib/session.js';
+import { getToken, clearToken, setActiveRoom } from '../lib/session.js';
 import { Avatar, Icon, Toast } from '../components/Icon.js';
 import { ProfilePopup } from '../components/Modals.js';
 import { APP_VERSION } from '../lib/version.js';
@@ -48,6 +48,7 @@ export function HomeScreen() {
     try {
       const { room } = await api.createRoom(mode);
       store.setRoom(room);
+      setActiveRoom(room.id);
       const token = getToken()!;
       wsClient.connect(token, {
         onState: (v) => store.setGameView(v),
@@ -70,6 +71,7 @@ export function HomeScreen() {
     try {
       const { room } = await api.joinRoom(code);
       store.setRoom(room);
+      setActiveRoom(room.id);
       const token = getToken()!;
       wsClient.connect(token, {
         onState: (v) => store.setGameView(v),

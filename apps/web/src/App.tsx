@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useStore } from './lib/store.js';
-import { getToken, setToken, consumeJoinCode, getPendingJoin, setPendingJoin, clearPendingJoin } from './lib/session.js';
+import { getToken, setToken, consumeJoinCode, getPendingJoin, setPendingJoin, clearPendingJoin, getActiveRoom, setActiveRoom, clearActiveRoom } from './lib/session.js';
 import { api } from './lib/api.js';
 import { wsClient } from './lib/ws.js';
 import { enablePush, pushSupported } from './lib/push.js';
@@ -31,19 +31,37 @@ export function App() {
       }
       wsClient.connect(token, {
         onState: (v) => store.setGameView(v),
-        onRoom: (r) => store.setRoom(r),
+        onRoom: (r) => {
+          store.setRoom(r);
+          // ripresa partita: se arrivo da login/home e la stanza è ancora viva → entra
+          const sc = useStore.getState().screen;
+          if (sc === 'login' || sc === 'home') {
+            if (r.status === 'finished' || r.status === 'abandoned') {
+              clearActiveRoom(); store.setScreen('home');
+            } else {
+              setActiveRoom(r.id);
+              store.setScreen('waiting'); // se c'è una partita, onState passerà al tavolo
+            }
+          }
+        },
         onError: (e) => store.showToast(e),
         onAbandoned: () => store.notifyOpponentLeft(),
       });
 
       const pending = getPendingJoin();
+      const active = getActiveRoom();
       if (pending) {
         clearPendingJoin();
         api.joinRoom(pending).then(({ room }) => {
           store.setRoom(room);
+          setActiveRoom(room.id);
           wsClient.subscribe(room.id);
           store.setScreen('waiting');
-        }).catch(() => store.setScreen('home'));
+        }).catch(() => { clearActiveRoom(); store.setScreen('home'); });
+      } else if (active) {
+        // tentativo di ripresa: home come fallback se la partita non esiste più
+        store.setScreen('home');
+        wsClient.subscribe(active);
       } else {
         store.setScreen('home');
       }
@@ -83,6 +101,7 @@ export function App() {
         <AbandonedPopup onClose={() => {
           store.setOpponentLeft(false);
           store.setRoom(null);
+          clearActiveRoom();
           store.setScreen('home');
         }} />
       )}

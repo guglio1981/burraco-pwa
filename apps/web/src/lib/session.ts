@@ -2,10 +2,16 @@
 
 const TOKEN_KEY = 'burraco_token';
 const PENDING_KEY = 'burraco_pending_join';
+const ACTIVE_ROOM_KEY = 'burraco_active_room';
 
 export const getToken = (): string | null => localStorage.getItem(TOKEN_KEY);
 export const setToken = (t: string): void => { localStorage.setItem(TOKEN_KEY, t); };
 export const clearToken = (): void => { localStorage.removeItem(TOKEN_KEY); };
+
+/** Stanza attiva (per riprendere la partita dopo chiusura accidentale del browser). */
+export const getActiveRoom = (): string | null => localStorage.getItem(ACTIVE_ROOM_KEY);
+export const setActiveRoom = (id: string): void => { localStorage.setItem(ACTIVE_ROOM_KEY, id); };
+export const clearActiveRoom = (): void => { localStorage.removeItem(ACTIVE_ROOM_KEY); };
 
 export const getPendingJoin = (): string | null => sessionStorage.getItem(PENDING_KEY);
 export const setPendingJoin = (code: string): void => { sessionStorage.setItem(PENDING_KEY, code); };
