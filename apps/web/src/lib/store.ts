@@ -20,6 +20,8 @@ export interface AppState {
   toast: string;
   /** Selezione carte in mano (id) */
   selectedIds: string[];
+  /** L'avversario ha abbandonato la partita → mostra popup */
+  opponentLeft: boolean;
 
   setScreen: (s: Screen) => void;
   setUser: (u: PublicUser | null) => void;
@@ -28,6 +30,7 @@ export interface AppState {
   showToast: (msg: string, ms?: number) => void;
   toggleCard: (id: string) => void;
   clearSelection: () => void;
+  setOpponentLeft: (v: boolean) => void;
   logout: () => void;
 }
 
@@ -38,6 +41,7 @@ export const useStore = create<AppState>((set, get) => ({
   gameView: null,
   toast: '',
   selectedIds: [],
+  opponentLeft: false,
 
   setScreen: (screen) => set({ screen }),
   setUser: (user) => set({ user }),
@@ -65,5 +69,6 @@ export const useStore = create<AppState>((set, get) => ({
       : [...s.selectedIds, id],
   })),
   clearSelection: () => set({ selectedIds: [] }),
-  logout: () => set({ user: null, room: null, gameView: null, screen: 'login', selectedIds: [] }),
+  setOpponentLeft: (opponentLeft) => set({ opponentLeft }),
+  logout: () => set({ user: null, room: null, gameView: null, screen: 'login', selectedIds: [], opponentLeft: false }),
 }));

@@ -16,6 +16,17 @@ export const setSoundEnabled = (v: boolean): void => {
   localStorage.setItem('burraco_sound', v ? 'on' : 'off');
 };
 
+let _vibration = localStorage.getItem('burraco_vibration') !== 'off';
+export const vibrationEnabled = (): boolean => _vibration;
+export const setVibrationEnabled = (v: boolean): void => {
+  _vibration = v;
+  localStorage.setItem('burraco_vibration', v ? 'on' : 'off');
+};
+/** Vibra solo se la vibrazione è attiva e supportata. */
+export function vibrate(pattern: number | number[]): void {
+  if (_vibration && 'vibrate' in navigator) navigator.vibrate(pattern);
+}
+
 function tone(
   freq: number,
   dur: number,
@@ -83,7 +94,7 @@ export const sfx = {
   yourTurn(): void {
     tone(440, 0.14, 'sine', 0.18);
     tone(554, 0.20, 'sine', 0.22, 0.13);
-    if ('vibrate' in navigator) navigator.vibrate([80, 30, 80]);
+    vibrate([80, 30, 80]);
   },
   oppAction(): void {
     tone(320, 0.06, 'triangle', 0.09);

@@ -9,7 +9,7 @@ import type { GameState, Seat, Move } from '@burraco/shared';
 import { buildView, TURN_MS } from '@burraco/shared';
 import { verifyToken } from './auth.js';
 import { getRoom, roomView, seatOf } from './rooms.js';
-import { applyMoveTx, applyTimeoutTx, nextRoundTx, loadGame } from './game.js';
+import { applyMoveTx, applyTimeoutTx, nextRoundTx, abandonTx, loadGame } from './game.js';
 import { TurnTimers } from './timers.js';
 
 interface Conn {
@@ -24,7 +24,8 @@ type ClientMsg =
   | { t: 'subscribe'; roomId: string }
   | { t: 'resync'; roomId: string }
   | { t: 'move'; roomId: string; baseRev: number; move: Move }
-  | { t: 'next_round'; roomId: string };
+  | { t: 'next_round'; roomId: string }
+  | { t: 'abandon'; roomId: string };
 
 const send = (ws: WebSocket, obj: unknown): void => {
   if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
@@ -82,6 +83,8 @@ export class GameHub {
         return this.handleMove(conn, msg.baseRev, msg.move);
       case 'next_round':
         return this.handleNextRound(conn);
+      case 'abandon':
+        return this.handleAbandon(conn);
       default:
         return send(conn.ws, { t: 'error', error: 'Comando sconosciuto' });
     }
@@ -154,6 +157,23 @@ export class GameHub {
     const out = await nextRoundTx(conn.roomId);
     if (out.status === 'ok') return this.broadcastState(conn.roomId, out.state);
     if (out.status === 'error') send(conn.ws, { t: 'error', error: out.error });
+  }
+
+  private async handleAbandon(conn: Conn): Promise<void> {
+    if (!conn.roomId || !conn.seat) return;
+    const roomId = conn.roomId;
+    const actor = conn.seat;
+    const out = await abandonTx(roomId, actor);
+    if (out.status !== 'ok') return;
+    this.timers.clear(roomId);
+    // avvisa SOLO l'avversario con il popup, poi aggiorna lo stato a tutti
+    const set = this.rooms.get(roomId);
+    if (set) {
+      for (const c of set) {
+        if (c.seat && c.seat !== actor) send(c.ws, { t: 'abandoned', by: actor });
+      }
+    }
+    this.broadcastState(roomId, out.state);
   }
 
   private scheduleFromState(roomId: string, state: GameState): void {

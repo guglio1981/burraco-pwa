@@ -4,7 +4,7 @@
    timeout di turno, manche successiva.
    ============================================================ */
 import type { GameState, Seat, Move } from '@burraco/shared';
-import { newGame, applyMove, applyTimeout, startNextRound, buildView, type PublicView } from '@burraco/shared';
+import { newGame, applyMove, applyTimeout, startNextRound, buildView, otherSeat, type PublicView } from '@burraco/shared';
 import { query, tx } from './db.js';
 import type { RoomRow } from './rooms.js';
 
@@ -107,6 +107,25 @@ export async function nextRoundTx(roomId: string, opts: { now?: number } = {}): 
     if (row.state.phase !== 'inter_round') return { status: 'error', error: 'Manche non conclusa' };
     const ns = startNextRound(row.state, { now: opts.now });
     await persist(client, roomId, ns);
+    return { status: 'ok', state: ns, rev: ns.rev };
+  });
+}
+
+/** Abbandono: il seat che abbandona perde, l'avversario è dichiarato vincitore. */
+export async function abandonTx(roomId: string, seat: Seat): Promise<MoveOutcome> {
+  return tx(async (client) => {
+    const sel = await client.query<{ state: GameState; rev: number }>(
+      'SELECT state, rev FROM games WHERE room_id = $1 FOR UPDATE',
+      [roomId],
+    );
+    const row = sel.rows[0];
+    if (!row) return { status: 'error', error: 'Partita non trovata' };
+    const ns: GameState = { ...row.state, phase: 'abandoned', winner: otherSeat(seat), rev: row.state.rev + 1 };
+    await client.query(
+      "UPDATE games SET state = $1::jsonb, rev = $2, status = 'finished', updated_at = now() WHERE room_id = $3",
+      [JSON.stringify(ns), ns.rev, roomId],
+    );
+    await client.query("UPDATE rooms SET status = 'abandoned' WHERE id = $1", [roomId]);
     return { status: 'ok', state: ns, rev: ns.rev };
   });
 }

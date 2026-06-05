@@ -9,6 +9,7 @@ export type WsHandler = {
   onRoom?: (room: RoomView) => void;
   onError?: (msg: string) => void;
   onOppAction?: (action: string, seat: Seat) => void;
+  onAbandoned?: () => void;
   onConnected?: () => void;
   onDisconnected?: () => void;
 };
@@ -85,6 +86,9 @@ export class BurracoWS {
       case 'opp_action':
         if (msg.action && msg.seat) this.handlers.onOppAction?.(msg.action, msg.seat);
         break;
+      case 'abandoned':
+        this.handlers.onAbandoned?.();
+        break;
       case 'error':
         if (msg.error) this.handlers.onError?.(msg.error);
         break;
@@ -104,6 +108,10 @@ export class BurracoWS {
 
   nextRound(): void {
     this.sendRaw({ t: 'next_round', roomId: this.roomId });
+  }
+
+  abandon(): void {
+    this.sendRaw({ t: 'abandon', roomId: this.roomId });
   }
 
   destroy(): void {

@@ -10,6 +10,7 @@ import { WaitingScreen } from './screens/WaitingScreen.js';
 import { TableScreen } from './screens/TableScreen.js';
 import { RoundEndScreen } from './screens/RoundEndScreen.js';
 import { VictoryScreen } from './screens/VictoryScreen.js';
+import { AbandonedPopup } from './components/Modals.js';
 
 export function App() {
   const store = useStore();
@@ -32,6 +33,7 @@ export function App() {
         onState: (v) => store.setGameView(v),
         onRoom: (r) => store.setRoom(r),
         onError: (e) => store.showToast(e),
+        onAbandoned: () => store.setOpponentLeft(true),
       });
 
       const pending = getPendingJoin();
@@ -77,6 +79,13 @@ export function App() {
       {screen === 'table'    && <TableScreen />}
       {screen === 'roundend' && <RoundEndScreen />}
       {screen === 'victory'  && <VictoryScreen />}
+      {store.opponentLeft && (
+        <AbandonedPopup onClose={() => {
+          store.setOpponentLeft(false);
+          store.setRoom(null);
+          store.setScreen('home');
+        }} />
+      )}
     </>
   );
 }

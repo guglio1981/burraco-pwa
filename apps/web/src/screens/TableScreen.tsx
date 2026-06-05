@@ -10,6 +10,7 @@ import { wsClient } from '../lib/ws.js';
 import { useStore } from '../lib/store.js';
 import { Icon } from '../components/Icon.js';
 import { LtCInner, LtMeldPile, LtPozzoPile } from '../components/TableComponents.tsx';
+import { SettingsSheet } from '../components/Modals.js';
 import { flyGhost, glowEl, bounceEl, pingEl } from '../lib/animations.js';
 import { sfx } from '../lib/sound.js';
 
@@ -25,6 +26,7 @@ export function TableScreen() {
   const view = store.gameView;
   const sel = store.selectedIds;
   const [sort, setSort] = useState<'suit' | 'rank'>('suit');
+  const [showSettings, setShowSettings] = useState(false);
 
   // Tick ogni secondo: forza il re-render + suono timer
   const [, setTick] = useState(0);
@@ -296,7 +298,7 @@ export function TableScreen() {
           <LtPozzoPile taken={view.oppPozzoPicked} count={view.oppPozzoCount} />
           <div className="lt-opp-badge" style={{ marginLeft: 8 }}>{view.oppHandCount}</div>
           <div className="lt-spacer" />
-          <button className="lt-icon-btn" aria-label="Impostazioni">
+          <button className="lt-icon-btn" aria-label="Impostazioni" onClick={() => setShowSettings(true)}>
             <Icon name="gear" size={18} color="#fff" />
           </button>
         </div>
@@ -422,6 +424,17 @@ export function TableScreen() {
         </div>
 
       </div>
+      {showSettings && (
+        <SettingsSheet
+          onClose={() => setShowSettings(false)}
+          onAbandon={() => {
+            wsClient.abandon();
+            setShowSettings(false);
+            store.setRoom(null);
+            store.setScreen('home');
+          }}
+        />
+      )}
     </div>
   );
 }
