@@ -2,7 +2,7 @@
    Tavolo di gioco — fedele al look v527
    Usa classi di table.css + componenti in TableComponents.tsx
    ============================================================ */
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import '../styles/table.css';
 import type { Card } from '@burraco/shared';
 import { validateMeld, validateAddToMeld } from '@burraco/shared';
@@ -83,6 +83,8 @@ export function TableScreen() {
   const oppBarRef = useRef<HTMLDivElement>(null);
   const myPozzoRef = useRef<HTMLDivElement>(null);
   const oppPozzoRef = useRef<HTMLDivElement>(null);
+  const oppMeldsRef = useRef<HTMLDivElement>(null);
+  const oppCountRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { store.clearSelection(); }, [view?.phase, view?.turn]);
 
@@ -115,28 +117,47 @@ export function TableScreen() {
     return () => ro.disconnect();
   }, [view !== null]);
 
-  // Animazione + suono distribuzione carte all'inizio di ogni round
+  // Animazione + suono distribuzione carte all'inizio di ogni round.
+  // useLayoutEffect: nasconde gli elementi PRIMA del paint (niente flash dello scarto iniziale).
   const prevRoundRef = useRef<number | null>(null);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!view || prevRoundRef.current === view.round) return;
     prevRoundRef.current = view.round;
-    // Distribuzione "teatrale" (portata dal vecchio progetto):
-    // Fase 1: 11 carte una a una dal mazzo alla mia mano
-    // Fase 2: blocco ×11 → avversario · Fase 3: ×11 → mio pozzo · Fase 4: ×11 → pozzo avv · Fase 5: flip scarti
-    requestAnimationFrame(() => {
-      const deck = deckRef.current;
-      if (!deck) return;
-      for (let i = 0; i < 11; i++) {
-        setTimeout(() => {
-          sfx.dealCard(0.88 + i * 0.01);
-          if (deck && handRef.current) flyGhost(deck, handRef.current, { dorso: true, duration: 520, arc: -50, rotate: 6 });
-        }, i * 90);
-      }
-      setTimeout(() => { sfx.dealCard(0.92); if (deck && oppBarRef.current) flyBlock(deck, oppBarRef.current, '×11', 600); }, 1150);
-      setTimeout(() => { sfx.dealCard(0.87); if (deck && myPozzoRef.current) flyBlock(deck, myPozzoRef.current, '×11', 500); }, 1750);
-      setTimeout(() => { sfx.dealCard(0.96); if (deck && oppPozzoRef.current) flyBlock(deck, oppPozzoRef.current, '×11', 500); }, 2250);
-      setTimeout(() => { sfx.dealCard(1.10); if (discardRef.current) flipEl(discardRef.current); }, 2800);
-    });
+    const deck = deckRef.current;
+    if (!deck) return;
+
+    // Nascondi subito tutto ciò che "riceve" le carte: appare solo quando le riceve davvero
+    const hide = (r: React.RefObject<HTMLElement>) => { if (r.current) r.current.style.visibility = 'hidden'; };
+    const show = (r: React.RefObject<HTMLElement>) => { if (r.current) r.current.style.visibility = ''; };
+    hide(handRef); hide(discardRef); hide(myPozzoRef); hide(oppPozzoRef); hide(oppCountRef);
+
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const at = (ms: number, fn: () => void) => timers.push(setTimeout(fn, ms));
+
+    // ── Fase 1: 11 carte dal mazzo alla LORO posizione reale nella mano ──
+    const cards = handRef.current ? [...handRef.current.querySelectorAll<HTMLElement>('.lt-card')] : [];
+    for (let i = 0; i < 11; i++) {
+      at(i * 90, () => {
+        sfx.dealCard(0.88 + i * 0.01);
+        const target = cards[i] ?? handRef.current;
+        if (deck && target) flyGhost(deck, target, { dorso: true, duration: 520, arc: -50, rotate: 6 });
+      });
+    }
+    at(11 * 90 + 230, () => show(handRef)); // rivela la mano quando l'ultima è arrivata
+
+    // ── Fase 2: blocco ×11 → mano avversario (badge carte) ──
+    at(1300, () => { sfx.dealCard(0.92); const t = oppCountRef.current ?? oppBarRef.current; if (deck && t) flyBlock(deck, t, '×11', 600); });
+    at(1900, () => show(oppCountRef));
+    // ── Fase 3: blocco ×11 → mio pozzo ──
+    at(1900, () => { sfx.dealCard(0.87); if (deck && myPozzoRef.current) flyBlock(deck, myPozzoRef.current, '×11', 500); });
+    at(2400, () => show(myPozzoRef));
+    // ── Fase 4: blocco ×11 → pozzo avversario ──
+    at(2400, () => { sfx.dealCard(0.96); if (deck && oppPozzoRef.current) flyBlock(deck, oppPozzoRef.current, '×11', 500); });
+    at(2900, () => show(oppPozzoRef));
+    // ── Fase 5: la prima carta scarti appare ORA, con flip 3D ──
+    at(3000, () => { sfx.dealCard(1.10); if (discardRef.current) { show(discardRef); flipEl(discardRef.current); } });
+
+    return () => { timers.forEach(clearTimeout); show(handRef); show(discardRef); show(myPozzoRef); show(oppPozzoRef); show(oppCountRef); };
   }, [view?.round]);
 
   // Suono "tuo turno" quando tocca a me
@@ -155,11 +176,16 @@ export function TableScreen() {
         sfx.oppAction();
         if (action === 'draw_deck' && deckRef.current && oppBarRef.current) {
           flyGhost(deckRef.current, oppBarRef.current, { dorso: true, duration: 220 });
+        } else if (action === 'take_discard' && discardRef.current && oppBarRef.current) {
+          // l'avversario prende dalla pila scarti: scarti → sua mano
+          flyGhost(discardRef.current, oppBarRef.current, { duration: 240, arc: -34 });
         } else if (action === 'discard' && oppBarRef.current && discardRef.current) {
           flyGhost(oppBarRef.current, discardRef.current, { duration: 200 });
-          if (discardRef.current) bounceEl(discardRef.current);
+          bounceEl(discardRef.current);
         } else if (action === 'meld' || action === 'add_to_meld') {
-          if (oppBarRef.current) pingEl(oppBarRef.current, '♟');
+          // l'avversario cala: sua mano → sue scale
+          if (oppBarRef.current && oppMeldsRef.current) flyGhost(oppBarRef.current, oppMeldsRef.current, { duration: 260, arc: -30 });
+          else if (oppBarRef.current) pingEl(oppBarRef.current, '♟');
         }
       },
     });
@@ -323,7 +349,7 @@ export function TableScreen() {
           <div ref={oppPozzoRef} style={{ display: 'inline-flex' }}>
             <LtPozzoPile taken={view.oppPozzoPicked} count={view.oppPozzoCount} />
           </div>
-          <div className="lt-opp-badge" style={{ marginLeft: 8 }}>{view.oppHandCount}</div>
+          <div ref={oppCountRef} className="lt-opp-badge" style={{ marginLeft: 8 }}>{view.oppHandCount}</div>
           <div className="lt-spacer" />
           <button className="lt-icon-btn" aria-label="Impostazioni" onClick={() => setShowSettings(true)}>
             <Icon name="gear" size={18} color="#fff" />
@@ -333,7 +359,7 @@ export function TableScreen() {
         {/* TAVOLO */}
         <div className="lt-table">
           {/* scale avversario */}
-          <div className="lt-opp-melds">
+          <div className="lt-opp-melds" ref={oppMeldsRef}>
             <div className="lt-melds-row">
               {view.oppMelds.length === 0
                 ? <span className="lt-meld-empty">nessuna scala</span>
