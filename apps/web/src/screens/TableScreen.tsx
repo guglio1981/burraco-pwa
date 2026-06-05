@@ -58,6 +58,7 @@ export function TableScreen() {
   const handRef = useRef<HTMLDivElement>(null);
   const myMeldsRef = useRef<HTMLDivElement>(null);
   const oppBarRef = useRef<HTMLDivElement>(null);
+  const myPozzoRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { store.clearSelection(); }, [view?.phase, view?.turn]);
 
@@ -96,13 +97,14 @@ export function TableScreen() {
     if (!view || prevRoundRef.current === view.round) return;
     prevRoundRef.current = view.round;
     sfx.deal();
-    // Vola N carte dorso dal mazzo alla mano con delay sfalsati
-    const count = Math.min(view.myHand.length || 11, 13);
+    // 11 carte verso la mano + 11 verso il pozzo (regole Burraco: sempre 11+11)
     requestAnimationFrame(() => {
-      for (let i = 0; i < count; i++) {
+      for (let i = 0; i < 11; i++) {
         const from = deckRef.current;
-        const to = handRef.current;
-        if (from && to) flyGhost(from, to, { dorso: true, duration: 160, delay: i * 75, arc: -28, rotate: 8 });
+        if (from && handRef.current)
+          flyGhost(from, handRef.current,   { dorso: true, duration: 160, delay: i * 75, arc: -28, rotate: 8 });
+        if (from && myPozzoRef.current)
+          flyGhost(from, myPozzoRef.current, { dorso: true, duration: 160, delay: i * 75 + 30, arc: -20, rotate: 5 });
       }
     });
   }, [view?.round]);
@@ -337,7 +339,9 @@ export function TableScreen() {
             </div>
             <span className="lt-pname">Tu</span>
             <span className="lt-sbig">{view.scores[view.you]}</span>
-            <LtPozzoPile taken={view.myPozzoPicked} count={view.myPozzoCount} />
+            <div ref={myPozzoRef} style={{ display: 'contents' }}>
+              <LtPozzoPile taken={view.myPozzoPicked} count={view.myPozzoCount} />
+            </div>
           </div>
 
           {/* scale mie — tocca qui per calare una nuova scala/tris */}
