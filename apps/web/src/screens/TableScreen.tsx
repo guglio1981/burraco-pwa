@@ -26,10 +26,19 @@ export function TableScreen() {
   const sel = store.selectedIds;
   const [sort, setSort] = useState<'suit' | 'rank'>('suit');
 
-  // Tick ogni secondo: forza il re-render così la barra del tempo scorre in continuo
+  // Tick ogni secondo: forza il re-render + suono timer
   const [, setTick] = useState(0);
+  const viewRef = useRef(view);
+  viewRef.current = view;
   useEffect(() => {
-    const id = setInterval(() => setTick((t) => (t + 1) % 60), 1000);
+    const id = setInterval(() => {
+      setTick((t) => (t + 1) % 60);
+      const v = viewRef.current;
+      if (v && (v.phase === 'draw' || v.phase === 'play')) {
+        const sec = Math.max(0, 60 - Math.floor((Date.now() - v.turnStart) / 1000));
+        sfx.tick(sec);
+      }
+    }, 1000);
     return () => clearInterval(id);
   }, []);
 
