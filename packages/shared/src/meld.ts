@@ -119,3 +119,63 @@ export function validateMeld(cards: Card[]): MeldInfo {
 export function validateAddToMeld(existing: Card[], add: Card[]): MeldInfo {
   return validateMeld(existing.concat(add));
 }
+
+/**
+ * Restituisce le carte della scala nell'ordine canonico di visualizzazione:
+ * - sequenza: carte naturali ordinate per rango, il wild inserito nel buco
+ *   (o in coda/testa se è a un estremo)
+ * - tris: naturali prima, wild in fondo
+ */
+export function canonicalizeMeld(cards: Card[]): Card[] {
+  if (cards.length < 2) return cards;
+
+  const interps = meldInterpretations(cards);
+  if (interps.length === 0) return cards;
+  const best = interps.reduce((a, b) => (b.wilds < a.wilds ? b : a));
+
+  const jokers  = cards.filter(isJoker);
+  const twos    = cards.filter(isPinella);
+  const rest    = cards.filter((c) => !isJoker(c) && !isPinella(c));
+
+  // ── TRIS ──────────────────────────────────────────────────────────────────
+  if (best.kind === 'tris') {
+    // Identifica i 2 usati come naturali (stesso rango degli altri) vs wild
+    const baseRank = rest[0]?.rank ?? twos[0]?.rank;
+    const nat2 = twos.filter((c) => c.rank === baseRank);
+    const wild2 = twos.filter((c) => c.rank !== baseRank);
+    return [...rest, ...nat2, ...wild2, ...jokers];
+  }
+
+  // ── SEQUENZA ──────────────────────────────────────────────────────────────
+  // Determina quali 2 sono naturali in questa sequenza
+  // (scelgo il subset di twos con seme == seme della sequenza se c'è, altrimenti wild)
+  const seqSuit = rest[0]?.suit;
+  const nat2inSeq = seqSuit ? twos.filter((c) => c.suit === seqSuit) : [];
+  const wild2inSeq = twos.filter((c) => !nat2inSeq.includes(c));
+
+  const naturals = [...rest, ...nat2inSeq].sort((a, b) => {
+    const ra = a.rank === 'A' ? 1 : (RIDX[a.rank] ?? 0);
+    const rb = b.rank === 'A' ? 1 : (RIDX[b.rank] ?? 0);
+    return ra - rb;
+  });
+  const wilds = [...jokers, ...wild2inSeq];
+
+  if (wilds.length === 0) return naturals;
+
+  // Trova l'eventuale buco tra le naturali (diff==2)
+  const idxs = naturals.map((c) => (c.rank === 'A' ? 1 : (RIDX[c.rank] ?? 0)));
+  let gapPos = -1;
+  for (let i = 1; i < idxs.length; i++) {
+    if ((idxs[i]! - idxs[i - 1]!) === 2) { gapPos = i; break; }
+  }
+
+  if (gapPos >= 0) {
+    // wild nel buco: [nat0..gapPos-1, wild, natGapPos..]
+    const result = [...naturals];
+    result.splice(gapPos, 0, ...wilds);
+    return result;
+  }
+
+  // Nessun buco: wild all'estremo basso (rappresenta la carta più piccola)
+  return [...wilds, ...naturals];
+}

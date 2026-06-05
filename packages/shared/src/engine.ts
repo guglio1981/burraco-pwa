@@ -10,7 +10,7 @@ import type {
   Card, GameState, Move, MoveResult, Seat, Mode, RoundResult,
 } from './types.js';
 import { otherSeat, isJoker, isPinella } from './types.js';
-import { validateMeld, validateAddToMeld } from './meld.js';
+import { validateMeld, validateAddToMeld, canonicalizeMeld } from './meld.js';
 import { isBurraco } from './burraco.js';
 import { playerRoundBreakdown, isMatchOver } from './scoring.js';
 import { checkConservation } from './conservation.js';
@@ -201,7 +201,7 @@ export function applyMove(
       if (!cards) return err('Carte non valide o non in mano');
       const v = validateMeld(cards);
       if (!v.valid) return err(v.msg ?? 'Scala non valida');
-      s.melds[seat].push(cards);
+      s.melds[seat].push(canonicalizeMeld(cards));
       const after = afterHandRemoval(s, seat);
       if (!after.ok) return err(after.error!);
       break;
@@ -215,7 +215,7 @@ export function applyMove(
       if (!cards) return err('Carte non valide o non in mano');
       const v = validateAddToMeld(meld, cards);
       if (!v.valid) return err(v.msg ?? 'Aggiunta non valida');
-      s.melds[seat][move.meldIndex] = meld.concat(cards);
+      s.melds[seat][move.meldIndex] = canonicalizeMeld(meld.concat(cards));
       const after = afterHandRemoval(s, seat);
       if (!after.ok) return err(after.error!);
       break;
