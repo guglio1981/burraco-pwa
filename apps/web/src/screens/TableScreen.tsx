@@ -90,13 +90,21 @@ export function TableScreen() {
     return () => ro.disconnect();
   }, [view !== null]);
 
-  // Suono distribuzione carte all'inizio di ogni round
+  // Animazione + suono distribuzione carte all'inizio di ogni round
   const prevRoundRef = useRef<number | null>(null);
   useEffect(() => {
-    if (view && prevRoundRef.current !== view.round) {
-      sfx.deal();
-      prevRoundRef.current = view.round;
-    }
+    if (!view || prevRoundRef.current === view.round) return;
+    prevRoundRef.current = view.round;
+    sfx.deal();
+    // Vola N carte dorso dal mazzo alla mano con delay sfalsati
+    const count = Math.min(view.myHand.length || 11, 13);
+    requestAnimationFrame(() => {
+      for (let i = 0; i < count; i++) {
+        const from = deckRef.current;
+        const to = handRef.current;
+        if (from && to) flyGhost(from, to, { dorso: true, duration: 160, delay: i * 75, arc: -28, rotate: 8 });
+      }
+    });
   }, [view?.round]);
 
   // Suono "tuo turno" quando tocca a me
