@@ -3,7 +3,7 @@ import React from 'react';
 type IconName =
   | 'back' | 'close' | 'chevron' | 'plus' | 'bell' | 'gear' | 'clock'
   | 'copy' | 'link' | 'chat' | 'user' | 'users' | 'trophy' | 'cards'
-  | 'bolt' | 'star' | 'check' | 'share' | 'sound' | 'flag' | 'info' | 'deck';
+  | 'bolt' | 'star' | 'check' | 'share' | 'sound' | 'flag' | 'info' | 'deck' | 'eye';
 
 interface Props { name: IconName; size?: number; color?: string; stroke?: number; }
 
@@ -32,6 +32,7 @@ export function Icon({ name, size = 22, color = 'currentColor', stroke = 2 }: Pr
     sound:   <g {...p}><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 8a5 5 0 010 8"/></g>,
     flag:    <g {...p}><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></g>,
     info:    <g {...p}><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.5"/></g>,
+    eye:     <g {...p}><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></g>,
   };
   return <svg width={size} height={size} viewBox="0 0 24 24">{paths[name]}</svg>;
 }

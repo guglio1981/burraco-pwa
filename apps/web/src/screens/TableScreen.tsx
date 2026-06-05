@@ -468,6 +468,9 @@ export function TableScreen() {
             </div>
             <div className="lt-msg-bar">
               <div className={`lt-msgbar ${msgCls}`}>{msg}</div>
+              <button className="lt-icon-btn" aria-label="Le tue carte" onClick={() => setShowHandViewer(true)}>
+                <Icon name="eye" size={20} color="#fff" />
+              </button>
             </div>
             <div ref={handRef} className="lt-handscroll" {...handLP.handlers}>
               {rows.map((row, ri) => {
@@ -506,7 +509,7 @@ export function TableScreen() {
         />
       )}
       {showDiscardPeek && (
-        <DiscardPeekPopup cards={view.discard} onClose={() => setShowDiscardPeek(false)} />
+        <DiscardPeekPopup cards={view.discard} anchorRef={discardRef} onClose={() => setShowDiscardPeek(false)} />
       )}
       {showHandViewer && (
         <HandViewerSheet
@@ -519,6 +522,10 @@ export function TableScreen() {
           msg={msg}
           msgCls={msgCls}
           myTurn={myPhase !== 'wait'}
+          timerShow={isMyTurn}
+          timerFrac={timerFrac}
+          timerOpp={view.turn !== view.you}
+          timerAnimate={timerAnimate}
           onClose={() => setShowHandViewer(false)}
         />
       )}
