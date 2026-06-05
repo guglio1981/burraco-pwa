@@ -153,7 +153,7 @@ export function WaitingScreen() {
           roomCode={room.code}
           myId={user?.id ?? ''}
           onClose={() => setShowInvite(false)}
-          onInvited={(nick) => store.showToast(`Invito inviato a ${nick}`)}
+          onInvited={(nick) => { store.showToast(`Invito inviato a ${nick}`); setShowInvite(false); }}
         />
       )}
       <Toast text={store.toast} />

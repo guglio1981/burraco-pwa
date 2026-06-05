@@ -95,9 +95,7 @@ export function HomeScreen() {
             style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'right' }}>
             <div>
               <div style={{ fontWeight: 700, fontSize: 14.5, color: 'var(--ink)', textTransform: 'uppercase' }}>{user?.nick ?? 'Ospite'}</div>
-              <div style={{ fontSize: 11.5, color: 'var(--gold-2)', fontWeight: 600, textTransform: 'uppercase' }}>
-                {user?.isGuest ? 'Ospite' : user?.username ? `@${user.username}` : ''}
-              </div>
+              {user?.isGuest && <div style={{ fontSize: 11.5, color: 'var(--gold-2)', fontWeight: 600 }}>Ospite</div>}
             </div>
             <Avatar name={user?.nick ?? '?'} size={42} />
           </button>

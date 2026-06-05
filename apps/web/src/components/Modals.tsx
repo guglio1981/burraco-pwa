@@ -89,6 +89,8 @@ export function ProfilePopup({ nick, username, isGuest, onLogout, onClose }: {
     supported ? Notification.permission : 'denied',
   );
   const [busy, setBusy] = useState(false);
+  const [snd, setSnd] = useState(soundEnabled());
+  const [vib, setVib] = useState(vibrationEnabled());
 
   async function activate() {
     setBusy(true);
@@ -115,9 +117,7 @@ export function ProfilePopup({ nick, username, isGuest, onLogout, onClose }: {
           <Avatar name={nick} size={52} />
           <div>
             <div style={{ fontWeight: 700, fontSize: 17, color: 'var(--ink)', textTransform: 'uppercase' }}>{nick}</div>
-            <div style={{ fontSize: 12.5, color: 'var(--gold-2)', fontWeight: 600, textTransform: 'uppercase' }}>
-              {isGuest ? 'Ospite' : username ? `@${username}` : ''}
-            </div>
+            {isGuest && <div style={{ fontSize: 12.5, color: 'var(--gold-2)', fontWeight: 600 }}>Ospite</div>}
           </div>
         </div>
 
@@ -133,6 +133,10 @@ export function ProfilePopup({ nick, username, isGuest, onLogout, onClose }: {
             )}
           </div>
         </div>
+        <div style={{ height: 1, background: 'var(--line-soft)' }} />
+        <Row label="Suoni" on={snd} onChange={(v) => { setSnd(v); setSoundEnabled(v); }} />
+        <div style={{ height: 1, background: 'var(--line-soft)' }} />
+        <Row label="Vibrazione" on={vib} onChange={(v) => { setVib(v); setVibrationEnabled(v); }} />
 
         <div style={{ height: 1, background: 'var(--line-soft)', margin: '8px 0 16px' }} />
 
