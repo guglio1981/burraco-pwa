@@ -200,6 +200,9 @@ export function TableScreen() {
 
   const selCards = sel.map((id) => view.myHand.find((c) => c.id === id)).filter(Boolean) as Card[];
   const meldVal = selCards.length >= 3 ? validateMeld(selCards) : { valid: false };
+  // Carta che NON puoi riscartare: l'unica appena raccolta da una pila scarti di 1 carta (regola §4)
+  const blockedDiscardId = view.mustDiscardDifferentId;
+  const selIsBlocked = sel.length === 1 && sel[0] === blockedDiscardId;
 
   // Ordina mano
   const hand = [...view.myHand].sort((a, b) => {
@@ -267,6 +270,10 @@ export function TableScreen() {
   }
   function doDiscard() {
     if (sel.length !== 1) return;
+    if (selIsBlocked) {
+      store.showToast('Non puoi riscartare la carta appena presa dagli scarti — scartane un\'altra', 2600);
+      return;
+    }
     const el = document.querySelector<HTMLElement>(`[data-card-id="${sel[0]}"]`);
     if (el && discardRef.current) {
       flyGhost(el, discardRef.current, { duration: 220 });
@@ -319,7 +326,10 @@ export function TableScreen() {
   let msg = 'Pesca dal mazzo o dagli scarti', msgCls = '';
   if (myPhase === 'wait') { msg = `Turno di ${oppName}`; }
   else if (myPhase === 'play') {
-    if (selCards.length >= 3) {
+    if (selIsBlocked) {
+      msg = 'Non puoi riscartare la carta appena presa dagli scarti — scartane un\'altra';
+      msgCls = 'err';
+    } else if (selCards.length >= 3) {
       msg = meldVal.valid ? `${meldVal.label ?? 'Scala valida'} — tocca le tue scale per calare` : (meldVal.msg ?? 'Scala non valida');
       msgCls = meldVal.valid ? 'ok' : 'err';
     } else if (selCards.length === 1) {
@@ -376,7 +386,7 @@ export function TableScreen() {
               <div className="lt-plbl">Mazzo</div>
             </div>
             <div className="lt-pw" onClick={onDiscardZone}>
-              <div ref={discardRef} className={'lt-disw lt-disw-fan' + (((myPhase === 'draw' && view.discard.length) || (myPhase === 'play' && sel.length === 1)) ? ' hot' : '')}>
+              <div ref={discardRef} className={'lt-disw lt-disw-fan' + (((myPhase === 'draw' && view.discard.length) || (myPhase === 'play' && sel.length === 1 && !selIsBlocked)) ? ' hot' : '')}>
                 {view.discard.length === 0
                   ? <div className="lt-dis-empty">vuoto</div>
                   : (() => {
