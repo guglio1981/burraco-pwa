@@ -11,7 +11,7 @@ import { useStore } from '../lib/store.js';
 import { Icon } from '../components/Icon.js';
 import { LtCInner, LtMeldPile, LtPozzoPile } from '../components/TableComponents.tsx';
 import { SettingsSheet } from '../components/Modals.js';
-import { flyGhost, glowEl, bounceEl, pingEl } from '../lib/animations.js';
+import { flyGhost, flyBlock, flipEl, glowEl, bounceEl, pingEl } from '../lib/animations.js';
 import { sfx } from '../lib/sound.js';
 
 const MODE_LABELS: Record<string, string> = { fast: 'Mod. veloce', '1005': 'Punti 1005', '2005': 'Punti 2005' };
@@ -70,6 +70,7 @@ export function TableScreen() {
   const myMeldsRef = useRef<HTMLDivElement>(null);
   const oppBarRef = useRef<HTMLDivElement>(null);
   const myPozzoRef = useRef<HTMLDivElement>(null);
+  const oppPozzoRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { store.clearSelection(); }, [view?.phase, view?.turn]);
 
@@ -107,16 +108,22 @@ export function TableScreen() {
   useEffect(() => {
     if (!view || prevRoundRef.current === view.round) return;
     prevRoundRef.current = view.round;
-    sfx.deal();
-    // 11 carte verso la mano + 11 verso il pozzo (regole Burraco: sempre 11+11)
+    // Distribuzione "teatrale" (portata dal vecchio progetto):
+    // Fase 1: 11 carte una a una dal mazzo alla mia mano
+    // Fase 2: blocco ×11 → avversario · Fase 3: ×11 → mio pozzo · Fase 4: ×11 → pozzo avv · Fase 5: flip scarti
     requestAnimationFrame(() => {
+      const deck = deckRef.current;
+      if (!deck) return;
       for (let i = 0; i < 11; i++) {
-        const from = deckRef.current;
-        if (from && handRef.current)
-          flyGhost(from, handRef.current,   { dorso: true, duration: 160, delay: i * 75, arc: -28, rotate: 8 });
-        if (from && myPozzoRef.current)
-          flyGhost(from, myPozzoRef.current, { dorso: true, duration: 160, delay: i * 75 + 30, arc: -20, rotate: 5 });
+        setTimeout(() => {
+          sfx.dealCard(0.88 + i * 0.01);
+          if (deck && handRef.current) flyGhost(deck, handRef.current, { dorso: true, duration: 520, arc: -50, rotate: 6 });
+        }, i * 90);
       }
+      setTimeout(() => { sfx.dealCard(0.92); if (deck && oppBarRef.current) flyBlock(deck, oppBarRef.current, '×11', 600); }, 1150);
+      setTimeout(() => { sfx.dealCard(0.87); if (deck && myPozzoRef.current) flyBlock(deck, myPozzoRef.current, '×11', 500); }, 1750);
+      setTimeout(() => { sfx.dealCard(0.96); if (deck && oppPozzoRef.current) flyBlock(deck, oppPozzoRef.current, '×11', 500); }, 2250);
+      setTimeout(() => { sfx.dealCard(1.10); if (discardRef.current) flipEl(discardRef.current); }, 2800);
     });
   }, [view?.round]);
 
@@ -295,7 +302,9 @@ export function TableScreen() {
           </div>
           <span className="lt-pname">{view.you === 'host' ? 'guest' : 'host'}</span>
           <span className="lt-sbig">{view.scores[view.you === 'host' ? 'guest' : 'host']}</span>
-          <LtPozzoPile taken={view.oppPozzoPicked} count={view.oppPozzoCount} />
+          <div ref={oppPozzoRef} style={{ display: 'inline-flex' }}>
+            <LtPozzoPile taken={view.oppPozzoPicked} count={view.oppPozzoCount} />
+          </div>
           <div className="lt-opp-badge" style={{ marginLeft: 8 }}>{view.oppHandCount}</div>
           <div className="lt-spacer" />
           <button className="lt-icon-btn" aria-label="Impostazioni" onClick={() => setShowSettings(true)}>
@@ -357,7 +366,7 @@ export function TableScreen() {
             </div>
             <span className="lt-pname">Tu</span>
             <span className="lt-sbig">{view.scores[view.you]}</span>
-            <div ref={myPozzoRef} style={{ display: 'contents' }}>
+            <div ref={myPozzoRef} style={{ display: 'inline-flex' }}>
               <LtPozzoPile taken={view.myPozzoPicked} count={view.myPozzoCount} />
             </div>
           </div>

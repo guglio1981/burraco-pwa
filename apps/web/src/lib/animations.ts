@@ -64,6 +64,60 @@ export function flyRect(from: DOMRect, to: DOMRect, opts: FlyOpts = {}): void {
   anim.oncancel  = () => ghost.remove();
 }
 
+/** Vola un "blocco" dorso con etichetta (es. ×11) da fromEl a toEl con arco parabolico.
+ *  Portato dal vecchio progetto (animateDealTheatrical). */
+export function flyBlock(fromEl: Element, toEl: Element, label: string, dur = 600): void {
+  const from = fromEl.getBoundingClientRect();
+  const to = toEl.getBoundingClientRect();
+  const w = Math.max(from.width, 46), h = Math.max(from.height, 66);
+  const fX = from.left + from.width / 2 - w / 2, fY = from.top + from.height / 2 - h / 2;
+  const tX = to.left + to.width / 2 - w / 2, tY = to.top + to.height / 2 - h / 2;
+  const dx = tX - fX, dy = tY - fY;
+  const arc = Math.min(80, Math.sqrt(dx * dx + dy * dy) * 0.11);
+
+  const el = document.createElement('div');
+  Object.assign(el.style, {
+    position: 'fixed', zIndex: '9999', pointerEvents: 'none',
+    width: `${w}px`, height: `${h}px`, left: `${fX}px`, top: `${fY}px`,
+    borderRadius: '6px',
+    background: 'repeating-linear-gradient(-45deg,#c62828,#c62828 4px,#fff 4px,#fff 8px)',
+    border: '1.5px solid rgba(255,255,255,.28)', boxShadow: '0 5px 16px rgba(0,0,0,.55)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', willChange: 'transform',
+  });
+  const b = document.createElement('span');
+  b.textContent = label;
+  Object.assign(b.style, {
+    color: '#fff', fontSize: '13px', fontWeight: '700', fontFamily: 'sans-serif',
+    background: 'rgba(0,0,0,.4)', borderRadius: '4px', padding: '2px 7px', letterSpacing: '.04em',
+  });
+  el.appendChild(b);
+  document.body.appendChild(el);
+
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const anim = el.animate(
+      [
+        { transform: 'translate(0,0) scale(1.04) rotate(-3deg)' },
+        { transform: `translate(${dx * 0.5}px,${dy * 0.5 - arc}px) scale(1.07) rotate(1.5deg)`, offset: 0.5 },
+        { transform: `translate(${dx}px,${dy}px) scale(.96) rotate(0deg)` },
+      ],
+      { duration: dur, easing: 'cubic-bezier(.15,0,.42,1)', fill: 'forwards' },
+    );
+    anim.onfinish = () => el.remove();
+    anim.oncancel = () => el.remove();
+  }));
+}
+
+/** Flip 3D di un elemento: ruota da dorso a faccia (es. pila scarti a fine distribuzione). */
+export function flipEl(el: HTMLElement): void {
+  el.style.transform = 'perspective(500px) rotateY(-90deg)';
+  el.style.transition = 'none';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    el.style.transition = 'transform .44s ease-out';
+    el.style.transform = 'perspective(500px) rotateY(0deg)';
+    setTimeout(() => { el.style.transform = ''; el.style.transition = ''; }, 480);
+  }));
+}
+
 /** Breve alone luminoso su un elemento (es. click sul mazzo). */
 export function glowEl(el: Element, color = '#f5c518', durationMs = 380): void {
   const r = el.getBoundingClientRect();
