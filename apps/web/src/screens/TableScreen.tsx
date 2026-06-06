@@ -13,7 +13,7 @@ import { Icon } from '../components/Icon.js';
 import { LtCInner, LtMeldPile, LtPozzoPile } from '../components/TableComponents.tsx';
 import { SettingsSheet } from '../components/Modals.js';
 import { DiscardPeekPopup, HandViewerSheet, useLongPress } from '../components/TableModals.js';
-import { flyGhost, flyRect, flyBlock, flipEl, glowEl, bounceEl, pingEl } from '../lib/animations.js';
+import { flyGhost, flyRect, flyBlock, flipEl, glowEl, bounceEl } from '../lib/animations.js';
 import { sfx } from '../lib/sound.js';
 
 const MODE_LABELS: Record<string, string> = { fast: 'Mod. veloce', '1005': 'Punti 1005', '2005': 'Punti 2005' };
@@ -233,27 +233,62 @@ export function TableScreen() {
           } else {
             flyRect(discardRef.current.getBoundingClientRect(), oppHand, { duration: 260, arc: -34 });
           }
-        } else if (action === 'discard' && oppHand && discardRef.current) {
-          // mano avversario → estremo destro del ventaglio scarti
-          const t = discardLandingRect();
-          if (t) flyRect(oppHand, t, { duration: 260, arc: -30 });
-          bounceEl(discardRef.current);
-        } else if (action === 'meld' || action === 'add_to_meld') {
-          // cala / aggiunge: mano avversario → sue scale (punto corretto)
-          const container = oppMeldsRef.current;
-          let to: DOMRect | null = null;
-          if (action === 'meld') {
-            to = meldsLandingRect(container);
-          } else if (container) {
-            const piles = container.querySelectorAll<HTMLElement>('.lt-meld-pile');
-            to = piles.length ? piles[piles.length - 1]!.getBoundingClientRect() : meldsLandingRect(container);
-          }
-          if (oppHand && to) flyRect(oppHand, to, { duration: 280, arc: -30 });
-          else if (oppBarRef.current) pingEl(oppBarRef.current, '♟');
         }
+        // NB: scarto e calata/aggiunta dell'avversario NON si animano qui (la carta
+        // sorgente non esiste: la sua mano è nascosta). Vengono animate dall'effetto
+        // di diff qui sotto, che fa volare la carta REALE di destinazione dal suo badge.
       },
     });
   }, []);
+
+  // ── Realismo azioni avversario (scarto + calata/aggiunta): animate DOPO il render,
+  // facendo volare la carta REALE comparsa (faccia vera) dal badge mano avversario. ──
+  const prevDiscardLenRef = useRef<number | null>(null);
+  const prevOppMeldIdsRef = useRef<Set<string>>(new Set());
+  const prevOppRoundRef = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    if (!view) return;
+    const flatOppIds = view.oppMelds.flat().map((c) => c.id);
+    const curOppSet = new Set(flatOppIds);
+    const curDiscLen = view.discard.length;
+
+    // inizio manche: solo snapshot, nessuna animazione
+    if (prevOppRoundRef.current !== view.round) {
+      prevOppRoundRef.current = view.round;
+      prevDiscardLenRef.current = curDiscLen;
+      prevOppMeldIdsRef.current = curOppSet;
+      return;
+    }
+
+    const oppHand = oppHandRect();
+
+    // Scarto avversario: la pila è cresciuta e ora tocca a me (lo scarto mio avviene in doDiscard).
+    if (oppHand && prevDiscardLenRef.current !== null && curDiscLen > prevDiscardLenRef.current && view.turn === view.you) {
+      const els = discardRef.current ? [...discardRef.current.querySelectorAll<HTMLElement>('.lt-card')] : [];
+      const top = els[els.length - 1];
+      if (top) {
+        const to = top.getBoundingClientRect();
+        top.style.opacity = '0'; // resta nascosta finché il fantasma (faccia vera) non atterra
+        flyRect(oppHand, to, { duration: 300, arc: -30, clone: top, onEnd: () => { top.style.opacity = '1'; } });
+        if (discardRef.current) bounceEl(discardRef.current);
+      }
+    }
+
+    // Calata/aggiunta avversario: carte nuove comparse nelle sue scale (solo l'avversario le tocca).
+    const newIds = flatOppIds.filter((id) => !prevOppMeldIdsRef.current.has(id));
+    if (oppHand && newIds.length && oppMeldsRef.current) {
+      newIds.forEach((id, i) => {
+        const el = oppMeldsRef.current!.querySelector<HTMLElement>(`[data-card-id="${id}"]`);
+        if (!el) return;
+        const to = el.getBoundingClientRect();
+        el.style.opacity = '0';
+        setTimeout(() => flyRect(oppHand, to, { duration: 300, arc: -28, rotate: 6, clone: el, onEnd: () => { el.style.opacity = '1'; } }), i * 60);
+      });
+    }
+
+    prevDiscardLenRef.current = curDiscLen;
+    prevOppMeldIdsRef.current = curOppSet;
+  }, [view?.rev]);
 
   const toggle = useCallback((id: string) => store.toggleCard(id), []);
 

@@ -52,7 +52,7 @@ export function LtMeldStack({ cards }: { cards: Card[] }) {
     <div className="lt-meld-stack" style={{ height: H }}>
       <div className="lt-meld-badge" style={{ top: -10, left: '72%', transform: 'translateX(-50%)', zIndex: n + 5 }}>{n}</div>
       {cards.map((c, k) => (
-        <div key={c.id} className={`lt-csm ${suitCls(c)}`} style={{ top: (H - CH) - (tops[k] ?? 0), zIndex: n - k }}>
+        <div key={c.id} data-card-id={c.id} className={`lt-csm ${suitCls(c)}`} style={{ top: (H - CH) - (tops[k] ?? 0), zIndex: n - k }}>
           <LtCInner c={c} />
         </div>
       ))}
