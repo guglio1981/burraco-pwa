@@ -162,6 +162,43 @@ describe('scarto ultima carta senza pozzetto → prende il pozzetto (spec §9)',
   });
 });
 
+describe('calata che lascerebbe 1 carta non scartabile (anti-incastro)', () => {
+  it('vieta la calata se resti con 1 carta, pozzetto preso e nessun burraco', () => {
+    const pool = buildDeck();
+    const grabbed = new Set<string>();
+    const grab = (rank: Rank, suit: Suit): Card => {
+      const c = pool.find((x) => x.rank === rank && x.suit === suit && !grabbed.has(x.id))!;
+      grabbed.add(c.id);
+      return c;
+    };
+    const tris = [grab('5', '♠'), grab('5', '♥'), grab('5', '♦')]; // tris valido
+    const leftover = grab('K', '♣'); // resterebbe questa, da sola
+    const hand = [...tris, leftover];
+    const rest = pool.filter((c) => !grabbed.has(c.id)); // 104
+    const state: GameState = {
+      deck: rest.slice(23),
+      discard: rest.slice(22, 23),
+      hands: { host: hand, guest: rest.slice(0, 11) },
+      pozzo: { host: [], guest: rest.slice(11, 22) },
+      melds: { host: [], guest: [] }, // nessun burraco
+      pozzoPicked: { host: true, guest: false }, // pozzetto GIÀ preso
+      scores: { host: 0, guest: 0 },
+      turn: 'host',
+      phase: 'play',
+      mode: '1005',
+      round: 1,
+      rev: 3,
+      winner: null,
+      turnStart: 0,
+      mustDiscardDifferentId: null,
+      lastRound: null,
+    };
+    expect(checkConservation(state).ok).toBe(true);
+    const r = applyMove(state, 'host', { type: 'MELD', cardIds: tris.map((c) => c.id) }, { now: 1 });
+    expect(r.ok).toBe(false); // calata rifiutata: resteresti incastrato
+  });
+});
+
 describe('chiusura (spec §9, §10)', () => {
   it('chiusura valida: assegna bonus, conclude e conserva 108', () => {
     const { state, handCard } = closingScenario();

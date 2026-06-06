@@ -107,6 +107,17 @@ function afterHandRemoval(s: GameState, seat: Seat): { ok: boolean; error?: stri
   return { ok: false, error: 'Devi tenere almeno una carta da scartare' };
 }
 
+/** Vieta una calata che riduce la mano a UNA sola carta quando NON potresti poi
+ *  scartarla per chiudere (pozzetto già preso ma nessun burraco). Senza questo
+ *  controllo il giocatore resta "incastrato": non può scartare l'ultima carta e
+ *  allo scadere del tempo la manche finiva forzatamente senza chiusura valida. */
+function checkNotStuck(s: GameState, seat: Seat): { ok: boolean; error?: string } {
+  if (s.hands[seat].length === 1 && s.pozzoPicked[seat] && !s.melds[seat].some((m) => isBurraco(m))) {
+    return { ok: false, error: 'Non puoi calare: resteresti con una sola carta e, senza un burraco, non potresti scartarla per chiudere' };
+  }
+  return { ok: true };
+}
+
 /** Condizioni di chiusura (spec §9). `discarded` è la carta scartata per chiudere. */
 function canClose(s: GameState, seat: Seat, discarded: Card): { ok: boolean; error?: string } {
   if (!s.pozzoPicked[seat]) return { ok: false, error: 'Non puoi chiudere: devi prima prendere il pozzetto' };
@@ -204,6 +215,8 @@ export function applyMove(
       s.melds[seat].push(canonicalizeMeld(cards));
       const after = afterHandRemoval(s, seat);
       if (!after.ok) return err(after.error!);
+      const stuck = checkNotStuck(s, seat);
+      if (!stuck.ok) return err(stuck.error!);
       break;
     }
 
@@ -218,6 +231,8 @@ export function applyMove(
       s.melds[seat][move.meldIndex] = canonicalizeMeld(meld.concat(cards));
       const after = afterHandRemoval(s, seat);
       if (!after.ok) return err(after.error!);
+      const stuck = checkNotStuck(s, seat);
+      if (!stuck.ok) return err(stuck.error!);
       break;
     }
 

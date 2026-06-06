@@ -154,17 +154,24 @@ export function canonicalizeMeld(cards: Card[]): Card[] {
   const nat2inSeq = seqSuit ? twos.filter((c) => c.suit === seqSuit) : [];
   const wild2inSeq = twos.filter((c) => !nat2inSeq.includes(c));
 
-  const naturals = [...rest, ...nat2inSeq].sort((a, b) => {
-    const ra = a.rank === 'A' ? 1 : (RIDX[a.rank] ?? 0);
-    const rb = b.rank === 'A' ? 1 : (RIDX[b.rank] ?? 0);
-    return ra - rb;
-  });
+  const naturalsRaw = [...rest, ...nat2inSeq];
+  const idxOf = (c: Card, aceHigh: boolean): number =>
+    c.rank === 'A' ? (aceHigh ? 14 : 1) : (RIDX[c.rank] ?? 0);
+  // Asso ALTO (… J Q K A) o BASSO (A 2 3 …): scegli l'ordinamento con meno buchi.
+  // Così una scala con l'asso in alto mostra l'asso IN CODA, non in testa.
+  let aceHigh = false;
+  if (naturalsRaw.some((c) => c.rank === 'A')) {
+    const lo = naturalsRaw.map((c) => idxOf(c, false)).sort((a, b) => a - b);
+    const hi = naturalsRaw.map((c) => idxOf(c, true)).sort((a, b) => a - b);
+    aceHigh = countGaps(hi) < countGaps(lo);
+  }
+  const naturals = naturalsRaw.sort((a, b) => idxOf(a, aceHigh) - idxOf(b, aceHigh));
   const wilds = [...jokers, ...wild2inSeq];
 
   if (wilds.length === 0) return naturals;
 
   // Trova l'eventuale buco tra le naturali (diff==2)
-  const idxs = naturals.map((c) => (c.rank === 'A' ? 1 : (RIDX[c.rank] ?? 0)));
+  const idxs = naturals.map((c) => idxOf(c, aceHigh));
   let gapPos = -1;
   for (let i = 1; i < idxs.length; i++) {
     if ((idxs[i]! - idxs[i - 1]!) === 2) { gapPos = i; break; }

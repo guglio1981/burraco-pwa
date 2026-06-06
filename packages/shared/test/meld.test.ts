@@ -1,6 +1,21 @@
 import { describe, it, expect } from 'vitest';
-import { validateMeld, validateAddToMeld } from '../src/index.js';
+import { validateMeld, validateAddToMeld, canonicalizeMeld } from '../src/index.js';
 import { C, J } from './helpers.js';
+
+describe('canonicalizeMeld — posizione dell\'asso', () => {
+  it('asso ALTO: J Q K A → asso in coda (non in testa)', () => {
+    const ord = canonicalizeMeld([C('A', '♠'), C('J', '♠'), C('Q', '♠'), C('K', '♠')]).map((c) => c.rank);
+    expect(ord).toEqual(['J', 'Q', 'K', 'A']);
+  });
+  it('asso ALTO con buco: Q K A → asso in coda', () => {
+    const ord = canonicalizeMeld([C('A', '♦'), C('Q', '♦'), C('K', '♦')]).map((c) => c.rank);
+    expect(ord).toEqual(['Q', 'K', 'A']);
+  });
+  it('asso BASSO: A 2 3 → asso in testa', () => {
+    const ord = canonicalizeMeld([C('3', '♥'), C('A', '♥'), C('2', '♥')]).map((c) => c.rank);
+    expect(ord).toEqual(['A', '2', '3']);
+  });
+});
 
 describe('validateMeld — base', () => {
   it('rifiuta meno di 3 carte', () => {

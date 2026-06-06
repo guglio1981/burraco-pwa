@@ -5,7 +5,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import '../styles/table.css';
 import type { Card } from '@burraco/shared';
-import { validateMeld, validateAddToMeld } from '@burraco/shared';
+import { validateMeld, validateAddToMeld, calcMeldPts } from '@burraco/shared';
 import { wsClient } from '../lib/ws.js';
 import { useStore } from '../lib/store.js';
 import { clearActiveRoom } from '../lib/session.js';
@@ -498,6 +498,12 @@ export function TableScreen() {
 
   const topCard = view.discard.length > 0 ? view.discard[view.discard.length - 1] : null;
 
+  // Punteggio in TEMPO REALE: cumulativo + punti delle scale calate finora (carte + bonus burraco),
+  // così il punteggio sale a ogni calata invece di restare fermo fino a fine manche.
+  const oppSeat = view.you === 'host' ? 'guest' : 'host';
+  const myLiveScore = view.scores[view.you] + view.myMelds.reduce((t, m) => t + calcMeldPts(m), 0);
+  const oppLiveScore = view.scores[oppSeat] + view.oppMelds.reduce((t, m) => t + calcMeldPts(m), 0);
+
   return (
     <div className="legacy-table">
       <div className="lt-safe" />
@@ -507,7 +513,7 @@ export function TableScreen() {
         <div className="lt-topbar" ref={oppBarRef}>
           <div className="lt-av">{initial(oppName)}</div>
           <span className="lt-pname">{oppName}</span>
-          <span className="lt-sbig">{view.scores[view.you === 'host' ? 'guest' : 'host']}</span>
+          <span className="lt-sbig">{oppLiveScore}</span>
           <div ref={oppPozzoRef} style={{ display: 'inline-flex' }}>
             <LtPozzoPile taken={view.oppPozzoPicked} count={view.oppPozzoCount} />
           </div>
@@ -573,7 +579,7 @@ export function TableScreen() {
           <div className="lt-me-bar">
             <div className="lt-av">{initial(myName)}</div>
             <span className="lt-pname">{myName}</span>
-            <span className="lt-sbig">{view.scores[view.you]}</span>
+            <span className="lt-sbig">{myLiveScore}</span>
             <div ref={myPozzoRef} style={{ display: 'inline-flex' }}>
               <LtPozzoPile taken={view.myPozzoPicked} count={view.myPozzoCount} />
             </div>
