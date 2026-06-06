@@ -11,9 +11,13 @@ import { TableScreen } from './screens/TableScreen.js';
 import { RoundEndScreen } from './screens/RoundEndScreen.js';
 import { VictoryScreen } from './screens/VictoryScreen.js';
 import { AbandonedPopup } from './components/Modals.js';
+import { useWakeLock } from './lib/useWakeLock.js';
 
 export function App() {
   const store = useStore();
+
+  /* ── tieni lo schermo acceso mentre sei in partita (in primo piano) ── */
+  useWakeLock(store.screen === 'waiting' || store.screen === 'table' || store.screen === 'roundend');
 
   /* ── bootstrap: token + deep-link ?join= ── */
   useEffect(() => {
