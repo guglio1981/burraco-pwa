@@ -124,6 +124,44 @@ function closingScenario(): { state: GameState; handCard: Card } {
   return { state, handCard };
 }
 
+describe('scarto ultima carta senza pozzetto → prende il pozzetto (spec §9)', () => {
+  it('svuotare la mano scartando, pozzetto non ancora preso: prende pozzetto, passa il turno, NON chiude', () => {
+    const pool = buildDeck();
+    // host: 1 sola carta in mano, pozzetto NON preso (11 carte nel pozzo)
+    const handCard = pool[0]!;
+    const state: GameState = {
+      deck: pool.slice(35),
+      discard: pool.slice(34, 35),
+      hands: { host: [handCard], guest: pool.slice(1, 12) },
+      pozzo: { host: pool.slice(12, 23), guest: pool.slice(23, 34) },
+      melds: { host: [], guest: [] },
+      pozzoPicked: { host: false, guest: false },
+      scores: { host: 0, guest: 0 },
+      turn: 'host',
+      phase: 'play',
+      mode: '1005',
+      round: 1,
+      rev: 5,
+      winner: null,
+      turnStart: 0,
+      mustDiscardDifferentId: null,
+      lastRound: null,
+    };
+    expect(checkConservation(state).ok).toBe(true);
+    const r = applyMove(state, 'host', { type: 'DISCARD', cardId: handCard.id }, { now: 1 });
+    expect(r.ok).toBe(true);
+    // pozzetto preso, mano ripristinata a 11
+    expect(r.state!.pozzoPicked.host).toBe(true);
+    expect(r.state!.hands.host.length).toBe(11);
+    expect(r.state!.pozzo.host.length).toBe(0);
+    // NON è una chiusura: la manche prosegue e il turno passa
+    expect(r.state!.phase).toBe('draw');
+    expect(r.state!.turn).toBe('guest');
+    expect(r.state!.lastRound).toBeNull();
+    expect(checkConservation(r.state!).ok).toBe(true);
+  });
+});
+
 describe('chiusura (spec §9, §10)', () => {
   it('chiusura valida: assegna bonus, conclude e conserva 108', () => {
     const { state, handCard } = closingScenario();

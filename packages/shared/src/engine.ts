@@ -234,7 +234,19 @@ export function applyMove(
       s.mustDiscardDifferentId = null;
 
       if (s.hands[seat].length === 0) {
-        // scarto che svuota la mano = tentativo di chiusura
+        if (!s.pozzoPicked[seat]) {
+          // svuoti la mano scartando ma NON hai ancora preso il pozzetto (spec §9):
+          // lo scarto è valido, prendi il pozzetto e il turno passa all'avversario.
+          // NON è una chiusura.
+          s.hands[seat] = s.pozzo[seat];
+          s.pozzo[seat] = [];
+          s.pozzoPicked[seat] = true;
+          s.turn = opp;
+          s.phase = 'draw';
+          s.turnStart = now;
+          break;
+        }
+        // pozzetto già preso → scarto che svuota la mano = tentativo di chiusura
         const cc = canClose(s, seat, card);
         if (!cc.ok) return err(cc.error!);
         endRound(s, seat, 'close');
