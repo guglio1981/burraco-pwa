@@ -80,6 +80,8 @@ export function TableScreen() {
 
   // Larghezza disponibile per la mano (per calcolare la sovrapposizione delle carte)
   const [handW, setHandW] = useState(0);
+  // Larghezza disponibile per le righe scale (per il ventaglio quando sono troppe)
+  const [meldsW, setMeldsW] = useState(typeof window !== 'undefined' ? window.innerWidth : 360);
 
   // Refs per le zone del tavolo (animazioni)
   const deckRef = useRef<HTMLDivElement>(null);
@@ -146,6 +148,17 @@ export function TableScreen() {
     const el = handRef.current;
     if (!el) return;
     const update = () => setHandW(el.clientWidth - 16);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [view !== null]);
+
+  // Misura la larghezza del contenitore scale (per il ventaglio orizzontale)
+  useEffect(() => {
+    const el = myMeldsRef.current;
+    if (!el) return;
+    const update = () => setMeldsW(el.clientWidth);
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
@@ -504,6 +517,19 @@ export function TableScreen() {
   const myLiveScore = view.scores[view.you] + view.myMelds.reduce((t, m) => t + calcMeldPts(m), 0);
   const oppLiveScore = view.scores[oppSeat] + view.oppMelds.reduce((t, m) => t + calcMeldPts(m), 0);
 
+  // Ventaglio scale: quando sono troppe le avviciniamo e, se serve, le sovrapponiamo
+  // (come nel vecchio progetto). Ritorna il marginRight (px) tra una pila e la successiva.
+  function meldGap(n: number): number {
+    const PILE_W = 48, GAP = 8, MIN_PEEK = 16;
+    if (n < 2) return 0;
+    const avail = meldsW - 20; // padding contenitore (10px per lato)
+    const naturalPeek = (avail - PILE_W) / (n - 1);
+    const peek = Math.max(MIN_PEEK, Math.min(PILE_W + GAP, naturalPeek));
+    return peek >= PILE_W + GAP ? GAP : Math.round(peek - PILE_W); // negativo = sovrapposte
+  }
+  const myMeldMr = meldGap(view.myMelds.length);
+  const oppMeldMr = meldGap(view.oppMelds.length);
+
   return (
     <div className="legacy-table">
       <div className="lt-safe" />
@@ -531,7 +557,10 @@ export function TableScreen() {
             <div className="lt-melds-row">
               {view.oppMelds.length === 0
                 ? <span className="lt-meld-empty">nessuna scala</span>
-                : view.oppMelds.map((m, i) => <LtMeldPile key={i} cards={m} />)}
+                : view.oppMelds.map((m, i) => (
+                    <LtMeldPile key={i} cards={m}
+                      style={{ marginRight: i < view.oppMelds.length - 1 ? oppMeldMr : 0, zIndex: i + 1 }} />
+                  ))}
             </div>
           </div>
 
@@ -592,6 +621,7 @@ export function TableScreen() {
                 ? <span className="lt-meld-empty">{myPhase === 'play' && selCards.length >= 3 ? 'tocca qui per calare' : 'nessuna scala'}</span>
                 : view.myMelds.map((m, i) => (
                     <LtMeldPile key={i} cards={m}
+                      style={{ marginRight: i < view.myMelds.length - 1 ? myMeldMr : 0, zIndex: i + 1 }}
                       onClick={(e) => { e.stopPropagation(); if (myPhase === 'play' && sel.length > 0) addToMeld(i); }} />
                   ))}
             </div>

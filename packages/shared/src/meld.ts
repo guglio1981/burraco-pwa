@@ -178,12 +178,17 @@ export function canonicalizeMeld(cards: Card[]): Card[] {
   }
 
   if (gapPos >= 0) {
-    // wild nel buco: [nat0..gapPos-1, wild, natGapPos..]
+    // wild nel buco da colmare: [nat0..gapPos-1, wild, natGapPos..]
     const result = [...naturals];
     result.splice(gapPos, 0, ...wilds);
     return result;
   }
 
-  // Nessun buco: wild all'estremo basso (rappresenta la carta più piccola)
+  // Nessun buco da colmare: il wild va IN FONDO (carta più piccola), TRANNE quando
+  // l'asso è basso ed è già la carta minima: lì sotto non può esserci nulla, quindi
+  // il wild estende verso l'ALTO (in coda).
+  if (!aceHigh && naturals.length > 0 && idxOf(naturals[0]!, aceHigh) === 1) {
+    return [...naturals, ...wilds];
+  }
   return [...wilds, ...naturals];
 }

@@ -17,6 +17,21 @@ describe('canonicalizeMeld — posizione dell\'asso', () => {
   });
 });
 
+describe('canonicalizeMeld — posizione del wild', () => {
+  it('wild copre il buco interno: 5 _ 7 → 5 wild 7', () => {
+    const ord = canonicalizeMeld([C('5', '♣'), C('7', '♣'), J()]).map((c) => c.rank);
+    expect(ord).toEqual(['5', 'JK', '7']);
+  });
+  it('wild in fondo se NON copre buchi: 5 6 7 + wild → wild in fondo', () => {
+    const ord = canonicalizeMeld([C('5', '♣'), C('6', '♣'), C('7', '♣'), J()]).map((c) => c.rank);
+    expect(ord).toEqual(['JK', '5', '6', '7']);
+  });
+  it('asso basso minimo, nessun buco: il wild estende in ALTO (A 2 3 + wild)', () => {
+    const ord = canonicalizeMeld([C('A', '♠'), C('2', '♠'), C('3', '♠'), J()]).map((c) => c.rank);
+    expect(ord).toEqual(['A', '2', '3', 'JK']);
+  });
+});
+
 describe('validateMeld — base', () => {
   it('rifiuta meno di 3 carte', () => {
     expect(validateMeld([C('7', '♠'), C('7', '♥')]).valid).toBe(false);

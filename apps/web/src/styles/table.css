@@ -93,8 +93,8 @@
 .lt-card.red .lt-c-tl, .lt-card.red .lt-c-br { color: var(--red); }
 
 /* scale (pile verticali compresse) */
-.lt-melds-row { display: flex; flex-direction: row; gap: 10px; align-items: flex-start;
-  overflow-x: auto; overflow-y: visible; padding: 12px 0 28px; }
+.lt-melds-row { display: flex; flex-direction: row; gap: 0; align-items: flex-start;
+  overflow-x: hidden; overflow-y: visible; padding: 12px 0 28px; }
 .lt-melds-row::-webkit-scrollbar { display: none; }
 .lt-meld-empty { font-size: 10px; color: rgba(255,255,255,.3); align-self: center; }
 .lt-meld-pile { display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0; position: relative; cursor: pointer; }
@@ -107,8 +107,10 @@
 .lt-meld-badge { background: var(--gold); color: #141008; font-size: 12px; font-weight: 700; min-width: 22px;
   height: 22px; border-radius: 11px; padding: 0 5px; display: inline-flex; align-items: center;
   justify-content: center; white-space: nowrap; position: absolute; }
-.lt-meld-type { font-size: 13px; font-weight: 700; border-radius: 8px; padding: 3px 10px; text-align: center;
-  white-space: nowrap; position: absolute; bottom: -24px; left: 50%; transform: translateX(-50%); }
+.lt-meld-type { font-size: 8.5px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase;
+  border-radius: 6px; padding: 2px 0; text-align: center; box-sizing: border-box; width: 48px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  position: absolute; bottom: -22px; left: 50%; transform: translateX(-50%); }
 .lt-burraco-clean { background: #1565c0; color: #e3f2fd; }
 .lt-burraco-semi  { background: #f5c518; color: #2a1f00; }
 .lt-burraco-dirty { background: #c62828; color: #ffebee; }
