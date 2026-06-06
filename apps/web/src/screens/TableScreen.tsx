@@ -99,6 +99,8 @@ export function TableScreen() {
   const prevHandIdsRef = useRef<Set<string>>(new Set());
   const drawnCardIdRef = useRef<string | null>(null);
   const lastDrawSourceRef = useRef<'deck' | 'discard' | null>(null); // bordo verde SOLO se 'deck'
+  // Rettangolo del mazzo catturato al click: la pesca atterra sulla carta reale dopo il re-render
+  const pendingDeckRectRef = useRef<DOMRect | null>(null);
   useEffect(() => {
     if (!view) return;
     if (view.turn === view.you) {
@@ -110,9 +112,22 @@ export function TableScreen() {
       } else if (view.phase === 'draw') {
         drawnCardIdRef.current = null;
         lastDrawSourceRef.current = null;
+        pendingDeckRectRef.current = null;
       }
       prevHandIdsRef.current = new Set(view.myHand.map((c) => c.id));
     }
+  }, [view?.phase, view?.turn, view?.rev]);
+
+  // Pesca dal mazzo REALISTICA: quando la carta pescata compare nella mano (re-render),
+  // fai volare il fantasma (dorso) dal mazzo ESATTAMENTE sulla carta nuova.
+  useEffect(() => {
+    if (!view || view.turn !== view.you || view.phase !== 'play') return;
+    const from = pendingDeckRectRef.current;
+    const id = drawnCardIdRef.current;
+    if (!from || !id) return;
+    pendingDeckRectRef.current = null;
+    const el = document.querySelector<HTMLElement>(`[data-card-id="${id}"]`);
+    if (el) flyRect(from, el.getBoundingClientRect(), { dorso: true, duration: 300, arc: -44, rotate: 8 });
   }, [view?.phase, view?.turn, view?.rev]);
 
   // Misura la larghezza utile della mano (esclusi i padding) e aggiorna a ogni resize
@@ -183,26 +198,36 @@ export function TableScreen() {
     wsClient.updateHandlers({
       onOppAction: (action) => {
         sfx.oppAction();
-        if (action === 'draw_deck' && deckRef.current && oppBarRef.current) {
-          flyGhost(deckRef.current, oppBarRef.current, { dorso: true, duration: 220 });
-        } else if (action === 'take_discard' && discardRef.current && oppBarRef.current) {
-          // l'avversario prende dalla pila scarti: ogni carta vola individualmente verso di lui
+        const oppHand = oppHandRect();
+        if (action === 'draw_deck' && deckRef.current && oppHand) {
+          // mazzo → mano avversario (dorso, carta nascosta)
+          flyRect(deckRef.current.getBoundingClientRect(), oppHand, { dorso: true, duration: 260, arc: -32 });
+        } else if (action === 'take_discard' && discardRef.current && oppHand) {
+          // prende dalla pila scarti: ogni carta vola individualmente verso il suo badge mano
           const cardEls = [...discardRef.current.querySelectorAll<HTMLElement>('.lt-card')];
-          const toRect = oppBarRef.current.getBoundingClientRect();
           if (cardEls.length) {
             const rects = cardEls.map((el) => el.getBoundingClientRect());
             const stagger = Math.min(45, Math.max(20, Math.round(380 / rects.length)));
-            rects.forEach((r, i) => setTimeout(() => flyRect(r, toRect, { duration: 260, arc: -34, rotate: 7 }), i * stagger));
+            rects.forEach((r, i) => setTimeout(() => flyRect(r, oppHand, { duration: 280, arc: -34, rotate: 7 }), i * stagger));
           } else {
-            flyGhost(discardRef.current, oppBarRef.current, { duration: 240, arc: -34 });
+            flyRect(discardRef.current.getBoundingClientRect(), oppHand, { duration: 260, arc: -34 });
           }
-        } else if (action === 'discard' && oppBarRef.current && discardRef.current) {
+        } else if (action === 'discard' && oppHand && discardRef.current) {
+          // mano avversario → estremo destro del ventaglio scarti
           const t = discardLandingRect();
-          if (t) flyRect(oppBarRef.current.getBoundingClientRect(), t, { duration: 220 });
+          if (t) flyRect(oppHand, t, { duration: 260, arc: -30 });
           bounceEl(discardRef.current);
         } else if (action === 'meld' || action === 'add_to_meld') {
-          // l'avversario cala: sua mano → sue scale
-          if (oppBarRef.current && oppMeldsRef.current) flyGhost(oppBarRef.current, oppMeldsRef.current, { duration: 260, arc: -30 });
+          // cala / aggiunge: mano avversario → sue scale (punto corretto)
+          const container = oppMeldsRef.current;
+          let to: DOMRect | null = null;
+          if (action === 'meld') {
+            to = meldsLandingRect(container);
+          } else if (container) {
+            const piles = container.querySelectorAll<HTMLElement>('.lt-meld-pile');
+            to = piles.length ? piles[piles.length - 1]!.getBoundingClientRect() : meldsLandingRect(container);
+          }
+          if (oppHand && to) flyRect(oppHand, to, { duration: 280, arc: -30 });
           else if (oppBarRef.current) pingEl(oppBarRef.current, '♟');
         }
       },
@@ -260,9 +285,8 @@ export function TableScreen() {
     if (myPhase !== 'draw') return;
     lastDrawSourceRef.current = 'deck';
     if (deckRef.current) glowEl(deckRef.current);
-    if (deckRef.current && handRef.current) {
-      flyGhost(deckRef.current, handRef.current, { dorso: true, duration: 230 });
-    }
+    // Cattura ORA la posizione del mazzo: il fantasma volerà sulla carta reale appena compare (effetto sopra).
+    pendingDeckRectRef.current = deckRef.current?.getBoundingClientRect() ?? null;
     sfx.draw();
     wsClient.move({ type: 'DRAW_DECK' });
   }
@@ -271,8 +295,8 @@ export function TableScreen() {
     lastDrawSourceRef.current = 'discard';
     // animazione reale: ogni carta degli scarti vola individualmente nella mano (cascata)
     const cardEls = discardRef.current ? [...discardRef.current.querySelectorAll<HTMLElement>('.lt-card')] : [];
-    if (cardEls.length && handRef.current) {
-      const toRect = handRef.current.getBoundingClientRect();
+    const toRect = handLandingRect();
+    if (cardEls.length && toRect) {
       const rects = cardEls.map((el) => el.getBoundingClientRect()); // cattura PRIMA che lo stato cambi
       const stagger = Math.min(45, Math.max(20, Math.round(380 / rects.length)));
       rects.forEach((r, i) => setTimeout(() => flyRect(r, toRect, { duration: 260, arc: -34, rotate: 7 }), i * stagger));
@@ -282,12 +306,11 @@ export function TableScreen() {
   }
   function doMeld() {
     if (!meldVal.valid) return;
-    if (myMeldsRef.current) {
+    const toRect = meldsLandingRect(myMeldsRef.current);
+    if (toRect) {
       sel.forEach((id, i) => {
         const el = document.querySelector<HTMLElement>(`[data-card-id="${id}"]`);
-        if (el && myMeldsRef.current) {
-          flyGhost(el, myMeldsRef.current, { duration: 200, arc: -28, delay: i * 40 });
-        }
+        if (el) flyRect(el.getBoundingClientRect(), toRect, { duration: 220, arc: -28, delay: i * 40 });
       });
     }
     sfx.meld();
@@ -318,6 +341,43 @@ export function TableScreen() {
     const W = 46, H = 66;
     return new DOMRect(r.right - W, r.top + (r.height - H) / 2, W, H);
   }
+  const CARD_RW = 46, CARD_RH = 66;
+  // Dove "atterrano" le carte raccolte dagli scarti: l'estremo destro della mano (dove si appende una carta).
+  function handLandingRect(): DOMRect | null {
+    const el = handRef.current;
+    if (!el) return null;
+    const cards = el.querySelectorAll<HTMLElement>('.lt-card');
+    if (cards.length) {
+      const last = cards[cards.length - 1]!.getBoundingClientRect();
+      return new DOMRect(last.left, last.top, CARD_RW, CARD_RH);
+    }
+    const r = el.getBoundingClientRect();
+    return new DOMRect(r.right - CARD_RW - 8, r.top + (r.height - CARD_RH) / 2, CARD_RW, CARD_RH);
+  }
+  // Punto dove appare una NUOVA scala: subito a destra dell'ultima pila della riga (o inizio riga se vuota).
+  function meldsLandingRect(container: HTMLElement | null): DOMRect | null {
+    if (!container) return null;
+    const row = container.querySelector<HTMLElement>('.lt-melds-row') ?? container;
+    const piles = row.querySelectorAll<HTMLElement>('.lt-meld-pile');
+    if (piles.length) {
+      const last = piles[piles.length - 1]!.getBoundingClientRect();
+      return new DOMRect(last.right + 6, last.top, CARD_RW, CARD_RH);
+    }
+    const r = row.getBoundingClientRect();
+    return new DOMRect(r.left + 4, r.top + (r.height - CARD_RH) / 2, CARD_RW, CARD_RH);
+  }
+  // Rettangolo della pila scala all'indice dato (per aggiunta a scala esistente); fallback al punto nuova-scala.
+  function meldPileRect(container: HTMLElement | null, index: number): DOMRect | null {
+    if (!container) return null;
+    const piles = container.querySelectorAll<HTMLElement>('.lt-meld-pile');
+    const p = piles[index];
+    return p ? p.getBoundingClientRect() : meldsLandingRect(container);
+  }
+  // "Mano" dell'avversario = il badge col conteggio carte (sorgente/destinazione reale delle sue azioni).
+  function oppHandRect(): DOMRect | null {
+    const el = oppCountRef.current ?? oppBarRef.current;
+    return el ? el.getBoundingClientRect() : null;
+  }
   // Tap sull'area degli scarti: in pesca = prendi dagli scarti; in gioco = scarta la carta selezionata
   function onDiscardZone() {
     if (myPhase === 'draw') { takeDiscard(); return; }
@@ -338,10 +398,11 @@ export function TableScreen() {
     if (!existing) return;
     const v = validateAddToMeld(existing, selCards);
     if (!v.valid) { store.showToast(v.msg ?? 'Aggiunta non valida'); return; }
-    if (myMeldsRef.current) {
+    const toRect = meldPileRect(myMeldsRef.current, meldIndex);
+    if (toRect) {
       sel.forEach((id, i) => {
         const el = document.querySelector<HTMLElement>(`[data-card-id="${id}"]`);
-        if (el && myMeldsRef.current) flyGhost(el, myMeldsRef.current, { duration: 200, delay: i * 35 });
+        if (el) flyRect(el.getBoundingClientRect(), toRect, { duration: 220, arc: -24, delay: i * 35 });
       });
     }
     sfx.meld();
