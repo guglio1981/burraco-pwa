@@ -8,11 +8,11 @@ import { sfx } from '../lib/sound.js';
 
 const MODE_LABEL: Record<string, string> = { fast: 'Veloce', '1005': 'Punti 1005', '2005': 'Punti 2005' };
 
-function ShareBtn({ icon, label, tint, onClick }: { icon: Parameters<typeof Icon>[0]['name']; label: string; tint?: string; onClick?: () => void; }) {
+function ShareBtn({ icon, label, tint, iconColor, onClick }: { icon: Parameters<typeof Icon>[0]['name']; label: string; tint?: string; iconColor?: string; onClick?: () => void; }) {
   return (
     <button onClick={onClick} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0', minHeight: 44 }}>
       <div style={{ width: 50, height: 50, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: tint || 'oklch(0.40 0.02 168 / 0.5)', border: '1px solid var(--line)', color: 'var(--ink)' }}>
+        background: tint || 'oklch(0.40 0.02 168 / 0.5)', border: '1px solid var(--line)', color: iconColor || 'var(--ink)' }}>
         <Icon name={icon} size={22} />
       </div>
       <span style={{ fontSize: 11, color: 'var(--ink-mut)', fontWeight: 600 }}>{label}</span>
@@ -98,7 +98,7 @@ export function WaitingScreen() {
 
         {/* condivisione */}
         <div style={{ display: 'flex', gap: 6, marginTop: 22 }}>
-          <ShareBtn icon="chat" label="WhatsApp" tint="oklch(0.55 0.13 150 / 0.35)" onClick={whatsApp} />
+          <ShareBtn icon="chat" label="WhatsApp" tint="#25D366" iconColor="#fff" onClick={whatsApp} />
           <ShareBtn icon="link" label="Copia link" onClick={copyLink} />
           <ShareBtn icon="copy" label="Copia codice" onClick={copyCode} />
           <ShareBtn icon="users" label="Invita amici" tint="var(--gold-soft)" onClick={() => setShowInvite(true)} />
@@ -132,6 +132,12 @@ export function WaitingScreen() {
           </div>
         </div>
 
+        {!isHost && (
+          <div style={{ textAlign: 'center', fontSize: 25, lineHeight: 1.25, color: 'var(--ink-mut)', marginTop: 22, fontWeight: 600 }}>
+            In attesa che <span style={{ color: 'var(--gold-2)', fontWeight: 800, textTransform: 'uppercase' }}>{room?.host?.nick ?? 'l\'host'}</span> avvii la partita…
+          </div>
+        )}
+
         <div style={{ flex: 1 }} />
 
         {isHost && guestHere
@@ -141,12 +147,6 @@ export function WaitingScreen() {
           : <button className="btn btn-ghost" style={{ width: '100%', marginTop: 22, opacity: cancelling ? 0.7 : 1 }} onClick={cancel}>
               {isHost ? 'Annulla' : 'Esci dalla stanza'}
             </button>}
-
-        {!isHost && (
-          <div style={{ textAlign: 'center', fontSize: 12.5, color: 'var(--ink-mut)', marginTop: 12 }}>
-            In attesa che <span style={{ color: 'var(--gold-2)', fontWeight: 700, textTransform: 'uppercase' }}>{room?.host?.nick ?? 'l\'host'}</span> avvii la partita…
-          </div>
-        )}
       </div>
 
       {showInvite && room && (

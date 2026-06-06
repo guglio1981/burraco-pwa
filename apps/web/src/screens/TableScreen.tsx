@@ -101,7 +101,9 @@ export function TableScreen() {
   const lastDrawSourceRef = useRef<'deck' | 'discard' | null>(null); // bordo verde SOLO se 'deck'
   // Rettangolo del mazzo catturato al click: la pesca atterra sulla carta reale dopo il re-render
   const pendingDeckRectRef = useRef<DOMRect | null>(null);
-  useEffect(() => {
+  // useLayoutEffect (PRIMA del paint): individua la carta pescata. Deve girare prima
+  // dell'effetto di volo qui sotto, che ne legge l'id.
+  useLayoutEffect(() => {
     if (!view) return;
     if (view.turn === view.you) {
       if (view.phase === 'play') {
@@ -118,16 +120,25 @@ export function TableScreen() {
     }
   }, [view?.phase, view?.turn, view?.rev]);
 
-  // Pesca dal mazzo REALISTICA: quando la carta pescata compare nella mano (re-render),
-  // fai volare il fantasma (dorso) dal mazzo ESATTAMENTE sulla carta nuova.
-  useEffect(() => {
+  // Pesca dal mazzo REALISTICA: la carta pescata resta NASCOSTA finché il fantasma (dorso)
+  // non atterra ESATTAMENTE sulla sua posizione reale nella mano → niente "carta in un posto,
+  // traiettoria in un altro". useLayoutEffect: nasconde la carta prima del paint (zero flash).
+  useLayoutEffect(() => {
     if (!view || view.turn !== view.you || view.phase !== 'play') return;
     const from = pendingDeckRectRef.current;
     const id = drawnCardIdRef.current;
     if (!from || !id) return;
     pendingDeckRectRef.current = null;
     const el = document.querySelector<HTMLElement>(`[data-card-id="${id}"]`);
-    if (el) flyRect(from, el.getBoundingClientRect(), { dorso: true, duration: 300, arc: -44, rotate: 8 });
+    if (!el) return;
+    const to = el.getBoundingClientRect(); // posizione FINALE (mano già riordinata)
+    el.style.opacity = '0';
+    flyRect(from, to, { dorso: true, duration: 320, arc: -44, rotate: 8, onEnd: () => {
+      el.style.opacity = '1';
+      el.style.transform = 'scale(1.08)';
+      el.style.transition = 'transform .12s';
+      setTimeout(() => { el.style.transform = ''; el.style.transition = ''; }, 200);
+    } });
   }, [view?.phase, view?.turn, view?.rev]);
 
   // Misura la larghezza utile della mano (esclusi i padding) e aggiorna a ogni resize
@@ -153,21 +164,31 @@ export function TableScreen() {
     // Nascondi subito tutto ciò che "riceve" le carte: appare solo quando le riceve davvero
     const hide = (r: React.RefObject<HTMLElement>) => { if (r.current) r.current.style.visibility = 'hidden'; };
     const show = (r: React.RefObject<HTMLElement>) => { if (r.current) r.current.style.visibility = ''; };
-    hide(handRef); hide(discardRef); hide(myPozzoRef); hide(oppPozzoRef); hide(oppCountRef);
+    hide(discardRef); hide(myPozzoRef); hide(oppPozzoRef); hide(oppCountRef);
 
     const timers: ReturnType<typeof setTimeout>[] = [];
     const at = (ms: number, fn: () => void) => timers.push(setTimeout(fn, ms));
 
-    // ── Fase 1: 11 carte dal mazzo alla LORO posizione reale nella mano ──
+    // ── Fase 1: 11 carte dal mazzo alla LORO posizione reale. Ogni carta resta
+    // NASCOSTA (opacity 0) finché il suo fantasma non atterra → non "sparisce" toccando
+    // il tavolo per poi riapparire: compare esattamente quando e dove la carta arriva. ──
     const cards = handRef.current ? [...handRef.current.querySelectorAll<HTMLElement>('.lt-card')] : [];
+    cards.forEach((c) => { c.style.opacity = '0'; });
     for (let i = 0; i < 11; i++) {
       at(i * 50, () => { // cadenza 50ms = rullata rapida del vecchio progetto
         sfx.dealCard(0.88 + i * 0.01);
         const target = cards[i] ?? handRef.current;
-        if (deck && target) flyGhost(deck, target, { dorso: true, duration: 520, arc: -50, rotate: 6 });
+        if (deck && target) flyGhost(deck, target, { dorso: true, duration: 520, arc: -50, rotate: 6, onEnd: () => {
+          const cel = cards[i];
+          if (cel) {
+            cel.style.opacity = '1';
+            cel.style.transform = 'scale(1.06)';
+            cel.style.transition = 'transform .12s';
+            setTimeout(() => { cel.style.transform = ''; cel.style.transition = ''; }, 200);
+          }
+        } });
       });
     }
-    at(11 * 50 + 520, () => show(handRef)); // rivela la mano quando l'ultima è arrivata
 
     // ── Fase 2: blocco ×11 → mano avversario (badge carte) ──
     at(1300, () => { sfx.dealCard(0.92); const t = oppCountRef.current ?? oppBarRef.current; if (deck && t) flyBlock(deck, t, '×11', 600); });
@@ -181,7 +202,7 @@ export function TableScreen() {
     // ── Fase 5: la prima carta scarti appare ORA, con flip 3D ──
     at(3000, () => { sfx.dealCard(1.10); if (discardRef.current) { show(discardRef); flipEl(discardRef.current); } });
 
-    return () => { timers.forEach(clearTimeout); show(handRef); show(discardRef); show(myPozzoRef); show(oppPozzoRef); show(oppCountRef); };
+    return () => { timers.forEach(clearTimeout); cards.forEach((c) => { c.style.opacity = ''; c.style.transform = ''; c.style.transition = ''; }); show(discardRef); show(myPozzoRef); show(oppPozzoRef); show(oppCountRef); };
   }, [view?.round]);
 
   // Suono "tuo turno" quando tocca a me
