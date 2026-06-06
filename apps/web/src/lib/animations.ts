@@ -10,6 +10,7 @@ export interface FlyOpts {
   arc?: number;         // picco dell'arco in px (negativo = verso l'alto)
   rotate?: number;      // rotazione max durante il volo in gradi
   delay?: number;       // ritardo ms (per le animazioni sfalsate)
+  clone?: Element;      // se presente (e non dorso): il fantasma mostra la FACCIA REALE di questa carta
   onEnd?: () => void;
 }
 
@@ -19,7 +20,7 @@ export function flyGhost(fromEl: Element, toEl: Element, opts: FlyOpts = {}): vo
 }
 
 export function flyRect(from: DOMRect, to: DOMRect, opts: FlyOpts = {}): void {
-  const { duration = 240, dorso = false, arc = -36, rotate = 9, delay = 0, onEnd } = opts;
+  const { duration = 240, dorso = false, arc = -36, rotate = 9, delay = 0, clone, onEnd } = opts;
 
   // Il fantasma è SEMPRE grande come una carta (46×66), centrato sull'elemento di partenza.
   // (Se partisse dall'intera barra avversario diventerebbe un enorme rettangolo bianco.)
@@ -50,6 +51,22 @@ export function flyRect(from: DOMRect, to: DOMRect, opts: FlyOpts = {}): void {
       ? '1.5px solid rgba(255,255,255,.4)'
       : '1px solid rgba(0,0,0,.12)',
   });
+
+  // Faccia reale: copia il contenuto della carta vera (valore/seme/colori) sul fantasma.
+  // Le carte usano var(--card/--red/--blk/--cw/--ch) definite su .legacy-table; il fantasma
+  // sta su <body>, quindi ridichiariamo quelle variabili inline così i colori risolvono.
+  if (clone && !dorso) {
+    const suit = clone.className.match(/\b(red|blk|joker-c)\b/)?.[0] ?? '';
+    ghost.className = 'lt-card ' + suit;
+    ghost.innerHTML = clone.innerHTML;
+    ghost.style.setProperty('--card', '#fffef8');
+    ghost.style.setProperty('--blk', '#1a1a1a');
+    ghost.style.setProperty('--red', '#e53935');
+    ghost.style.setProperty('--cw', `${w}px`);
+    ghost.style.setProperty('--ch', `${h}px`);
+    ghost.style.overflow = 'hidden';
+  }
+
   document.body.appendChild(ghost);
 
   const peakX = dx / 2;

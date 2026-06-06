@@ -229,7 +229,7 @@ export function TableScreen() {
           if (cardEls.length) {
             const rects = cardEls.map((el) => el.getBoundingClientRect());
             const stagger = Math.min(45, Math.max(20, Math.round(380 / rects.length)));
-            rects.forEach((r, i) => setTimeout(() => flyRect(r, oppHand, { duration: 280, arc: -34, rotate: 7 }), i * stagger));
+            rects.forEach((r, i) => setTimeout(() => flyRect(r, oppHand, { duration: 280, arc: -34, rotate: 7, clone: cardEls[i] }), i * stagger));
           } else {
             flyRect(discardRef.current.getBoundingClientRect(), oppHand, { duration: 260, arc: -34 });
           }
@@ -320,7 +320,7 @@ export function TableScreen() {
     if (cardEls.length && toRect) {
       const rects = cardEls.map((el) => el.getBoundingClientRect()); // cattura PRIMA che lo stato cambi
       const stagger = Math.min(45, Math.max(20, Math.round(380 / rects.length)));
-      rects.forEach((r, i) => setTimeout(() => flyRect(r, toRect, { duration: 260, arc: -34, rotate: 7 }), i * stagger));
+      rects.forEach((r, i) => setTimeout(() => flyRect(r, toRect, { duration: 260, arc: -34, rotate: 7, clone: cardEls[i] }), i * stagger));
     }
     sfx.draw();
     wsClient.move({ type: 'TAKE_DISCARD' });
@@ -331,7 +331,7 @@ export function TableScreen() {
     if (toRect) {
       sel.forEach((id, i) => {
         const el = document.querySelector<HTMLElement>(`[data-card-id="${id}"]`);
-        if (el) flyRect(el.getBoundingClientRect(), toRect, { duration: 220, arc: -28, delay: i * 40 });
+        if (el) flyRect(el.getBoundingClientRect(), toRect, { duration: 220, arc: -28, delay: i * 40, clone: el });
       });
     }
     sfx.meld();
@@ -347,7 +347,7 @@ export function TableScreen() {
     const el = document.querySelector<HTMLElement>(`[data-card-id="${sel[0]}"]`);
     const target = discardLandingRect();
     if (el && target) {
-      flyRect(el.getBoundingClientRect(), target, { duration: 220 });
+      flyRect(el.getBoundingClientRect(), target, { duration: 220, clone: el });
       if (discardRef.current) bounceEl(discardRef.current);
     }
     sfx.discard();
@@ -423,7 +423,7 @@ export function TableScreen() {
     if (toRect) {
       sel.forEach((id, i) => {
         const el = document.querySelector<HTMLElement>(`[data-card-id="${id}"]`);
-        if (el) flyRect(el.getBoundingClientRect(), toRect, { duration: 220, arc: -24, delay: i * 35 });
+        if (el) flyRect(el.getBoundingClientRect(), toRect, { duration: 220, arc: -24, delay: i * 35, clone: el });
       });
     }
     sfx.meld();
