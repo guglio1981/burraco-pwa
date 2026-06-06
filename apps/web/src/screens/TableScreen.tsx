@@ -161,13 +161,13 @@ export function TableScreen() {
     // ── Fase 1: 11 carte dal mazzo alla LORO posizione reale nella mano ──
     const cards = handRef.current ? [...handRef.current.querySelectorAll<HTMLElement>('.lt-card')] : [];
     for (let i = 0; i < 11; i++) {
-      at(i * 90, () => {
+      at(i * 50, () => { // cadenza 50ms = rullata rapida del vecchio progetto
         sfx.dealCard(0.88 + i * 0.01);
         const target = cards[i] ?? handRef.current;
         if (deck && target) flyGhost(deck, target, { dorso: true, duration: 520, arc: -50, rotate: 6 });
       });
     }
-    at(11 * 90 + 230, () => show(handRef)); // rivela la mano quando l'ultima è arrivata
+    at(11 * 50 + 520, () => show(handRef)); // rivela la mano quando l'ultima è arrivata
 
     // ── Fase 2: blocco ×11 → mano avversario (badge carte) ──
     at(1300, () => { sfx.dealCard(0.92); const t = oppCountRef.current ?? oppBarRef.current; if (deck && t) flyBlock(deck, t, '×11', 600); });

@@ -101,10 +101,13 @@ export const sfx = {
     filt.Q.value = 0.5;
     const g = ac.createGain(); g.gain.setValueAtTime(0.10, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
     src.connect(filt); filt.connect(g); g.connect(ac.destination); src.start(t); src.stop(t + 0.22);
-    // click morbido d'atterraggio
+    // "tonfo" d'atterraggio — port FEDELE dal vecchio sfxDeal: l'oscillatore parte a
+    // t+0.19 ma il gain viene automatizzato solo da t+0.23 → nei primi ~40ms il gain
+    // resta al default (1.0), producendo un knock secco e corposo. NON normalizzare:
+    // è esattamente questo a dare il carattere del suono di distribuzione originale.
     const o = ac.createOscillator(), og = ac.createGain();
     o.type = 'triangle'; o.frequency.value = 140 * pitch;
-    og.gain.setValueAtTime(0.045, t + 0.19); og.gain.exponentialRampToValueAtTime(0.001, t + 0.30);
+    og.gain.setValueAtTime(0.045, t + 0.23); og.gain.exponentialRampToValueAtTime(0.001, t + 0.32);
     o.connect(og); og.connect(ac.destination); o.start(t + 0.19); o.stop(t + 0.30);
   },
   draw(): void {
