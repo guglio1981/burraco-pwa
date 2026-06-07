@@ -107,13 +107,13 @@
 .lt-meld-badge { background: var(--gold); color: #141008; font-size: 12px; font-weight: 700; min-width: 22px;
   height: 22px; border-radius: 11px; padding: 0 5px; display: inline-flex; align-items: center;
   justify-content: center; white-space: nowrap; position: absolute; }
-.lt-meld-type { font-size: 8.5px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase;
+.lt-meld-type { font-size: 11px; font-weight: 700; letter-spacing: 0; text-transform: uppercase;
   border-radius: 6px; padding: 2px 0; text-align: center; box-sizing: border-box; width: 48px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2;
   position: absolute; bottom: -22px; left: 50%; transform: translateX(-50%); }
-.lt-burraco-clean { background: #1565c0; color: #e3f2fd; }
-.lt-burraco-semi  { background: #f5c518; color: #2a1f00; }
-.lt-burraco-dirty { background: #c62828; color: #ffebee; }
+.lt-burraco-clean { background: #1565c0; color: #fff; }
+.lt-burraco-semi  { background: #f5c518; color: #000; }
+.lt-burraco-dirty { background: #c62828; color: #fff; }
 
 /* HUD inferiore */
 .lt-bot { flex-shrink: 0; background: var(--s1); border-top: 1px solid var(--border); display: flex; align-items: stretch; overflow: visible; }
