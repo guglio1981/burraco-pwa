@@ -3,6 +3,7 @@ import { useStore } from './lib/store.js';
 import { getToken, setToken, consumeJoinCode, getPendingJoin, setPendingJoin, clearPendingJoin, getActiveRoom, setActiveRoom, clearActiveRoom } from './lib/session.js';
 import { api } from './lib/api.js';
 import { wsClient } from './lib/ws.js';
+import { localGame } from './lib/localGame.js';
 import { enablePush, pushSupported } from './lib/push.js';
 import { LoginScreen } from './screens/LoginScreen.js';
 import { HomeScreen } from './screens/HomeScreen.js';
@@ -34,7 +35,8 @@ export function App() {
         setTimeout(() => enablePush(), 800);
       }
       wsClient.connect(token, {
-        onState: (v) => store.setGameView(v),
+        // se sto giocando contro il computer (motore locale) ignora gli stati del server
+        onState: (v) => { if (!useStore.getState().vsComputer) store.setGameView(v); },
         onRoom: (r) => {
           store.setRoom(r);
           // ripresa partita: se arrivo da login/home e la stanza è ancora viva → entra
@@ -74,6 +76,15 @@ export function App() {
     });
   }, []);
 
+  /* ── autosave partita vs computer all'uscita / cambio scheda ── */
+  useEffect(() => {
+    const save = () => { if (useStore.getState().vsComputer) localGame.saveNow(); };
+    const onVis = () => { if (document.hidden) save(); };
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('pagehide', save);
+    return () => { document.removeEventListener('visibilitychange', onVis); window.removeEventListener('pagehide', save); };
+  }, []);
+
   /* ── pageshow (BFCache) — ri-check deep-link ── */
   useEffect(() => {
     const handler = (e: PageTransitionEvent) => {
@@ -105,6 +116,7 @@ export function App() {
         <AbandonedPopup onClose={() => {
           store.setOpponentLeft(false);
           store.setRoom(null);
+          store.setVsComputer(false);
           clearActiveRoom();
           store.setScreen('home');
         }} />

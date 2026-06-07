@@ -2,6 +2,9 @@ import React, { useEffect, useRef } from 'react';
 import { useStore } from '../lib/store.js';
 import { Avatar, Icon } from '../components/Icon.js';
 import { wsClient } from '../lib/ws.js';
+import { gameClient } from '../lib/gameClient.js';
+import { localGame } from '../lib/localGame.js';
+import { clearLocalGame } from '../lib/saveGame.js';
 import { api } from '../lib/api.js';
 import { getToken, setActiveRoom, clearActiveRoom } from '../lib/session.js';
 import { sfx } from '../lib/sound.js';
@@ -26,7 +29,7 @@ export function VictoryScreen() {
   const view = store.gameView;
   const user = store.user;
   const oppUser = store.room ? (store.room.host?.id === user?.id ? store.room.guest : store.room.host) : null;
-  const oppName = oppUser?.nick ?? 'Avversario';
+  const oppName = gameClient.isLocal ? 'Computer' : (oppUser?.nick ?? 'Avversario');
 
   if (!view) return null;
 
@@ -45,6 +48,12 @@ export function VictoryScreen() {
 
   async function rematch() {
     if (!view) return;
+    // Rivincita contro il computer: nuova partita locale, stessa modalità e difficoltà
+    if (gameClient.isLocal) {
+      store.setRoom(null);
+      localGame.start(view.mode, localGame.difficulty);
+      return;
+    }
     try {
       const { room } = await api.createRoom(view.mode);
       store.setRoom(room);
@@ -99,7 +108,7 @@ export function VictoryScreen() {
         </div>
 
         <div style={{ width: '100%', maxWidth: 320, display: 'flex', gap: 10, marginTop: 26 }}>
-          <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => { clearActiveRoom(); store.setRoom(null); store.setScreen('home'); }}>
+          <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => { clearActiveRoom(); clearLocalGame(); store.setRoom(null); store.setVsComputer(false); store.setScreen('home'); }}>
             Home
           </button>
           <button className="btn btn-gold" style={{ flex: 1.4 }} onClick={rematch}>

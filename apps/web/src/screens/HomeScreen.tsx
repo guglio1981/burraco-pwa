@@ -1,11 +1,49 @@
 import React, { useState } from 'react';
 import { api } from '../lib/api.js';
 import { wsClient } from '../lib/ws.js';
+import { localGame } from '../lib/localGame.js';
+import { loadLocalGame, clearLocalGame, type LocalSave } from '../lib/saveGame.js';
+import type { Difficulty } from '../lib/bot.js';
 import { useStore } from '../lib/store.js';
 import { getToken, clearToken, setActiveRoom } from '../lib/session.js';
 import { Avatar, Icon, Toast } from '../components/Icon.js';
 import { ProfilePopup } from '../components/Modals.js';
 import { APP_VERSION } from '../lib/version.js';
+
+const DIFF_LABEL: Record<Difficulty, string> = { easy: 'Facile', medium: 'Medio', hard: 'Difficile' };
+const DIFF_DESC: Record<Difficulty, string> = {
+  easy: 'Pesca dal mazzo, cala poco e scarta senza strategia',
+  medium: 'Avversario equilibrato (come nel vecchio Burraco)',
+  hard: 'Sfrutta gli scarti, punta ai burraco e scarta con prudenza',
+};
+
+function DiffSeg({ value, onChange }: { value: Difficulty; onChange: (d: Difficulty) => void }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+      {(['easy', 'medium', 'hard'] as Difficulty[]).map((d) => {
+        const on = value === d;
+        return (
+          <button key={d} onClick={() => onChange(d)} style={{ cursor: 'pointer', borderRadius: 13, padding: '11px 6px',
+            background: on ? 'var(--gold-soft)' : 'oklch(0.30 0.02 168 / 0.5)',
+            border: '1.5px solid ' + (on ? 'oklch(0.81 0.125 86 / 0.7)' : 'var(--line)'),
+            color: on ? 'var(--gold)' : 'var(--ink-mut)', fontFamily: 'var(--font-ui)', textAlign: 'center', transition: 'all .15s' }}>
+            <div style={{ fontFamily: 'var(--font-disp)', fontWeight: 700, fontSize: 16 }}>{DIFF_LABEL[d]}</div>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function timeAgo(ts: number): string {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return 'poco fa';
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m} min fa`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} h fa`;
+  return `${Math.floor(h / 24)} g fa`;
+}
 
 const MODE_SHORT: Record<string, string> = { fast: 'Veloce', '1005': '1005', '2005': '2005' };
 const MODE_DESC: Record<string, string> = {
@@ -41,7 +79,25 @@ export function HomeScreen() {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [botMode, setBotMode] = useState('1005');
+  const [botDiff, setBotDiff] = useState<Difficulty>('medium');
+  const [saved, setSaved] = useState<LocalSave | null>(() => loadLocalGame());
   const user = store.user;
+
+  function startComputer() {
+    store.setRoom(null);
+    localGame.start(botMode as 'fast' | '1005' | '2005', botDiff);
+  }
+  function resumeComputer() {
+    const s = loadLocalGame();
+    if (!s) { setSaved(null); return; }
+    store.setRoom(null);
+    localGame.resume(s);
+  }
+  function deleteSave() {
+    clearLocalGame();
+    setSaved(null);
+  }
 
   async function createRoom() {
     setLoading(true);
@@ -121,6 +177,34 @@ export function HomeScreen() {
           </div>
         </div>
 
+        {/* riprendi partita salvata (vs computer) */}
+        {saved && (
+          <div style={{ background: 'linear-gradient(160deg, oklch(0.31 0.04 168 / 0.92), oklch(0.24 0.03 168 / 0.92))',
+            border: '1.5px solid oklch(0.81 0.125 86 / 0.5)', borderRadius: 22, padding: 16, marginBottom: 14, boxShadow: 'var(--sh-1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <div className="t-label" style={{ color: 'var(--gold-2)' }}>Riprendi partita</div>
+              <button onClick={deleteSave} aria-label="Elimina partita salvata"
+                style={{ background: 'oklch(0.52 0.18 25 / 0.18)', border: '1px solid oklch(0.52 0.18 25 / 0.5)', borderRadius: 10, padding: '6px 8px', cursor: 'pointer', color: 'oklch(0.7 0.16 25)' }}>
+                <Icon name="trash" size={16} />
+              </button>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '4px 0 12px' }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--ink)' }}>vs Computer · {DIFF_LABEL[saved.difficulty]}</div>
+                <div style={{ fontSize: 12, color: 'var(--ink-mut)', marginTop: 2 }}>
+                  {MODE_SHORT[saved.state.mode]} · Manche {saved.state.round} · {timeAgo(saved.savedAt)}
+                </div>
+              </div>
+              <div className="tnum" style={{ fontFamily: 'var(--font-disp)', fontWeight: 800, fontSize: 18, color: 'var(--gold)' }}>
+                {saved.state.scores.host} – {saved.state.scores.guest}
+              </div>
+            </div>
+            <button className="btn btn-gold" style={{ width: '100%' }} onClick={resumeComputer}>
+              <Icon name="cards" size={20} /> Continua
+            </button>
+          </div>
+        )}
+
         {/* nuova partita */}
         <div style={{ background: 'oklch(0.255 0.026 168 / 0.85)', border: '1px solid var(--line)', borderRadius: 22, padding: 18, boxShadow: 'var(--sh-1)', backdropFilter: 'blur(6px)' }}>
           <div className="t-label" style={{ marginBottom: 12 }}>Nuova partita</div>
@@ -128,6 +212,17 @@ export function HomeScreen() {
           <div style={{ fontSize: 12.5, color: 'var(--ink-mut)', margin: '11px 2px 16px', textAlign: 'center' }}>{MODE_DESC[mode]}</div>
           <button className="btn btn-gold" style={{ width: '100%', opacity: loading ? 0.7 : 1 }} onClick={createRoom} disabled={loading}>
             <Icon name="cards" size={20} /> Crea e invita un amico
+          </button>
+        </div>
+
+        {/* sfida il computer (offline) */}
+        <div style={{ background: 'oklch(0.255 0.026 168 / 0.85)', border: '1px solid var(--line)', borderRadius: 22, padding: 18, marginTop: 14, boxShadow: 'var(--sh-1)' }}>
+          <div className="t-label" style={{ marginBottom: 12 }}>Sfida il computer</div>
+          <DiffSeg value={botDiff} onChange={setBotDiff} />
+          <div style={{ fontSize: 12.5, color: 'var(--ink-mut)', margin: '11px 2px 14px', textAlign: 'center' }}>{DIFF_DESC[botDiff]}</div>
+          <ModeSeg value={botMode} onChange={setBotMode} />
+          <button className="btn btn-gold" style={{ width: '100%', marginTop: 16 }} onClick={startComputer}>
+            <Icon name="cards" size={20} /> Gioca col computer
           </button>
         </div>
 

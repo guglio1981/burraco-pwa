@@ -23,6 +23,10 @@ export interface AppState {
   selectedIds: string[];
   /** L'avversario ha abbandonato la partita → mostra popup */
   opponentLeft: boolean;
+  /** Partita in corso contro il computer (motore locale, non server) */
+  vsComputer: boolean;
+  /** Salta l'animazione di distribuzione al prossimo render del tavolo (es. ripresa partita) */
+  suppressDeal: boolean;
 
   setScreen: (s: Screen) => void;
   setUser: (u: PublicUser | null) => void;
@@ -32,6 +36,8 @@ export interface AppState {
   toggleCard: (id: string) => void;
   clearSelection: () => void;
   setOpponentLeft: (v: boolean) => void;
+  setVsComputer: (v: boolean) => void;
+  setSuppressDeal: (v: boolean) => void;
   /** Notifica abbandono avversario: mostra popup solo se sono ancora in partita */
   notifyOpponentLeft: () => void;
   logout: () => void;
@@ -45,6 +51,8 @@ export const useStore = create<AppState>((set, get) => ({
   toast: '',
   selectedIds: [],
   opponentLeft: false,
+  vsComputer: false,
+  suppressDeal: false,
 
   setScreen: (screen) => set({ screen }),
   setUser: (user) => set({ user }),
@@ -73,10 +81,12 @@ export const useStore = create<AppState>((set, get) => ({
   })),
   clearSelection: () => set({ selectedIds: [] }),
   setOpponentLeft: (opponentLeft) => set({ opponentLeft }),
+  setVsComputer: (vsComputer) => set({ vsComputer }),
+  setSuppressDeal: (suppressDeal) => set({ suppressDeal }),
   notifyOpponentLeft: () => {
     const s = get().screen;
     // ignora se sono già fuori dalla partita (login/home) — es. dopo aver abbandonato io
     if (s !== 'login' && s !== 'home') set({ opponentLeft: true });
   },
-  logout: () => { clearActiveRoom(); set({ user: null, room: null, gameView: null, screen: 'login', selectedIds: [], opponentLeft: false }); },
+  logout: () => { clearActiveRoom(); set({ user: null, room: null, gameView: null, screen: 'login', selectedIds: [], opponentLeft: false, vsComputer: false, suppressDeal: false }); },
 }));

@@ -6,7 +6,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from
 import '../styles/table.css';
 import type { Card } from '@burraco/shared';
 import { validateMeld, validateAddToMeld, calcMeldPts } from '@burraco/shared';
-import { wsClient } from '../lib/ws.js';
+import { gameClient } from '../lib/gameClient.js';
 import { useStore } from '../lib/store.js';
 import { clearActiveRoom } from '../lib/session.js';
 import { Icon } from '../components/Icon.js';
@@ -171,6 +171,8 @@ export function TableScreen() {
   useLayoutEffect(() => {
     if (!view || prevRoundRef.current === view.round) return;
     prevRoundRef.current = view.round;
+    // ripresa partita salvata: niente distribuzione, le carte sono già in tavola
+    if (useStore.getState().suppressDeal) { useStore.getState().setSuppressDeal(false); return; }
     const deck = deckRef.current;
     if (!deck) return;
 
@@ -229,7 +231,7 @@ export function TableScreen() {
 
   // Animazioni azioni avversario
   useEffect(() => {
-    wsClient.updateHandlers({
+    gameClient.updateHandlers({
       onOppAction: (action) => {
         sfx.oppAction();
         const oppHand = oppHandRect();
@@ -357,7 +359,7 @@ export function TableScreen() {
     // Cattura ORA la posizione del mazzo: il fantasma volerà sulla carta reale appena compare (effetto sopra).
     pendingDeckRectRef.current = deckRef.current?.getBoundingClientRect() ?? null;
     sfx.draw();
-    wsClient.move({ type: 'DRAW_DECK' });
+    gameClient.move({ type: 'DRAW_DECK' });
   }
   function takeDiscard() {
     if (myPhase !== 'draw' || !view!.discard.length) return;
@@ -371,7 +373,7 @@ export function TableScreen() {
       rects.forEach((r, i) => setTimeout(() => flyRect(r, toRect, { duration: 260, arc: -34, rotate: 7, clone: cardEls[i] }), i * stagger));
     }
     sfx.draw();
-    wsClient.move({ type: 'TAKE_DISCARD' });
+    gameClient.move({ type: 'TAKE_DISCARD' });
   }
   function doMeld() {
     if (!meldVal.valid) return;
@@ -383,7 +385,7 @@ export function TableScreen() {
       });
     }
     sfx.meld();
-    wsClient.move({ type: 'MELD', cardIds: sel });
+    gameClient.move({ type: 'MELD', cardIds: sel });
     store.clearSelection();
   }
   function doDiscard() {
@@ -399,7 +401,7 @@ export function TableScreen() {
       if (discardRef.current) bounceEl(discardRef.current);
     }
     sfx.discard();
-    wsClient.move({ type: 'DISCARD', cardId: sel[0]! });
+    gameClient.move({ type: 'DISCARD', cardId: sel[0]! });
     store.clearSelection();
   }
   // Rettangolo dove atterra la carta scartata = estremo DESTRO del ventaglio scarti (carta più recente)
@@ -475,7 +477,7 @@ export function TableScreen() {
       });
     }
     sfx.meld();
-    wsClient.move({ type: 'ADD_TO_MELD', meldIndex, cardIds: sel });
+    gameClient.move({ type: 'ADD_TO_MELD', meldIndex, cardIds: sel });
     store.clearSelection();
   }
 
@@ -484,7 +486,7 @@ export function TableScreen() {
   const meUser = store.user;
   const oppUser = room ? (room.host?.id === meUser?.id ? room.guest : room.host) : null;
   const myName = meUser?.nick ?? 'Tu';
-  const oppName = oppUser?.nick ?? 'Avversario';
+  const oppName = gameClient.isLocal ? 'Computer' : (oppUser?.nick ?? 'Avversario');
   const initial = (n: string) => n.trim()[0]?.toUpperCase() ?? '?';
 
   // Messaggio barra
@@ -689,10 +691,11 @@ export function TableScreen() {
         <SettingsSheet
           onClose={() => setShowSettings(false)}
           onAbandon={() => {
-            wsClient.abandon();
+            gameClient.abandon();
             clearActiveRoom();
             setShowSettings(false);
             store.setRoom(null);
+            store.setVsComputer(false);
             store.setScreen('home');
           }}
         />

@@ -1,6 +1,6 @@
 import React from 'react';
 import type { PlayerRoundBreakdown } from '@burraco/shared';
-import { wsClient } from '../lib/ws.js';
+import { gameClient } from '../lib/gameClient.js';
 import { useStore } from '../lib/store.js';
 import { Avatar, Icon } from '../components/Icon.js';
 
@@ -58,7 +58,7 @@ export function RoundEndScreen() {
   const view = store.gameView;
   const user = store.user;
   const oppUser = store.room ? (store.room.host?.id === user?.id ? store.room.guest : store.room.host) : null;
-  const oppName = oppUser?.nick ?? 'Avversario';
+  const oppName = gameClient.isLocal ? 'Computer' : (oppUser?.nick ?? 'Avversario');
 
   if (!view?.lastRound) return null;
 
@@ -103,8 +103,8 @@ export function RoundEndScreen() {
         </div>
 
         <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-          <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => { store.setRoom(null); store.setScreen('home'); }}>Esci</button>
-          <button className="btn btn-gold" style={{ flex: 2 }} onClick={() => wsClient.nextRound()}>
+          <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => { store.setRoom(null); store.setVsComputer(false); store.setScreen('home'); }}>Esci</button>
+          <button className="btn btn-gold" style={{ flex: 2 }} onClick={() => gameClient.nextRound()}>
             <Icon name="cards" size={18} /> Manche successiva
           </button>
         </div>
