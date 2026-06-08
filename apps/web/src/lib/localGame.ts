@@ -8,7 +8,7 @@
    Le viste vengono spinte nello store via buildView(state,'host').
    ============================================================ */
 import type { GameState, Move, Mode, Seat } from '@burraco/shared';
-import { newGame, startNextRound, applyMove, buildView } from '@burraco/shared';
+import { newGame, startNextRound, applyMove, buildView, TURN_MS } from '@burraco/shared';
 import { useStore } from './store.js';
 import { saveLocalGame, clearLocalGame, type LocalSave } from './saveGame.js';
 import {
@@ -22,11 +22,34 @@ let state: GameState | null = null;
 let difficulty: Difficulty = 'medium';
 let oppActionCb: ((action: string) => void) | null = null;
 let timers: ReturnType<typeof setTimeout>[] = [];
+let humanTimer: ReturnType<typeof setTimeout> | null = null;
 let botRunning = false;
 
 const isActive = (s: GameState): boolean => s.phase === 'draw' || s.phase === 'play';
-const clearTimers = (): void => { timers.forEach(clearTimeout); timers = []; };
+const clearHumanTimer = (): void => { if (humanTimer) { clearTimeout(humanTimer); humanTimer = null; } };
+const clearTimers = (): void => { timers.forEach(clearTimeout); timers = []; clearHumanTimer(); };
 const delay = (ms: number): Promise<void> => new Promise((res) => { timers.push(setTimeout(res, ms)); });
+
+/** Arma/azzera il timer del turno UMANO: allo scadere dei 60s scatta lo scarto
+ *  automatico (come fa il server nell'online). Il bot non ha bisogno di timer:
+ *  gioca da sé entro i suoi ritardi. */
+function syncTurnTimer(): void {
+  clearHumanTimer();
+  if (!state || !isActive(state) || state.turn !== HUMAN) return;
+  const remaining = Math.max(0, state.turnStart + TURN_MS - Date.now());
+  humanTimer = setTimeout(() => { humanTimer = null; onHumanTimeout(); }, remaining);
+}
+
+function onHumanTimeout(): void {
+  if (!state || state.turn !== HUMAN || !isActive(state)) return;
+  const res = applyMove(state, HUMAN, { type: 'TIMEOUT_AUTO' });
+  if (!res.ok || !res.state) return;
+  state = res.state;
+  pushView();
+  persist();
+  if (isActive(state) && state.turn === BOT) scheduleBot(700);
+  else syncTurnTimer();
+}
 
 function pushView(): void {
   if (state) useStore.getState().setGameView(buildView(state, HUMAN));
@@ -47,6 +70,7 @@ function commitBot(move: Move, action: string): boolean {
   oppActionCb?.(action);
   pushView();
   persist();
+  syncTurnTimer(); // durante il turno del bot azzera; al passaggio all'umano arma i 60s
   return true;
 }
 
@@ -106,6 +130,7 @@ async function runBotTurn(): Promise<void> {
 }
 
 function scheduleBot(initialDelay: number): void {
+  clearHumanTimer(); // è il turno del bot: nessun timer umano pendente
   timers.push(setTimeout(() => { void runBotTurn(); }, initialDelay));
 }
 
@@ -122,6 +147,7 @@ export const localGame = {
     s.setVsComputer(true);
     pushView();
     persist();
+    syncTurnTimer();
   },
 
   /** Riprende una partita salvata. */
@@ -134,6 +160,7 @@ export const localGame = {
     s.setSuppressDeal(true); // niente animazione di distribuzione: la partita è già in corso
     pushView();
     if (state && isActive(state) && state.turn === BOT) scheduleBot(900);
+    else syncTurnTimer();
   },
 
   /** Mossa del giocatore umano. */
@@ -145,6 +172,7 @@ export const localGame = {
     pushView();
     persist();
     if (isActive(state) && state.turn === BOT) scheduleBot(800);
+    else syncTurnTimer(); // resto in gioco (calata/aggiunta): mantieni i 60s del turno
   },
 
   /** Manche successiva (modalità a punti). */
@@ -155,6 +183,7 @@ export const localGame = {
     pushView();
     persist();
     if (isActive(state) && state.turn === BOT) scheduleBot(900);
+    else syncTurnTimer();
   },
 
   /** Esce dalla partita: ferma il bot e salva (resta ripristinabile dalla Home). */
