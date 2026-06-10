@@ -30,6 +30,18 @@ describe('canonicalizeMeld — posizione del wild', () => {
     const ord = canonicalizeMeld([C('A', '♠'), C('2', '♠'), C('3', '♠'), J()]).map((c) => c.rank);
     expect(ord).toEqual(['A', '2', '3', 'JK']);
   });
+  it('il 2 dello STESSO seme fa da matta nel buco, non resta in fondo: 2♥ 3 4 6 7 → 3 4 [2] 6 7', () => {
+    const ord = canonicalizeMeld([
+      C('2', '♥'), C('3', '♥'), C('4', '♥'), C('6', '♥'), C('7', '♥'),
+    ]).map((c) => c.rank);
+    expect(ord).toEqual(['3', '4', '2', '6', '7']);
+  });
+  it('2 naturale resta in fondo e il jolly riempie il buco: 2♥ 3 5 6 + jolly → 2 3 [JK] 5 6', () => {
+    const ord = canonicalizeMeld([
+      C('2', '♥'), C('3', '♥'), C('5', '♥'), C('6', '♥'), J(),
+    ]).map((c) => c.rank);
+    expect(ord).toEqual(['2', '3', 'JK', '5', '6']);
+  });
 });
 
 describe('validateMeld — base', () => {

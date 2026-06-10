@@ -35,6 +35,15 @@ function DiffSeg({ value, onChange }: { value: Difficulty; onChange: (d: Difficu
   );
 }
 
+function Chevron({ open }: { open: boolean }) {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+      style={{ transition: 'transform .22s ease', transform: open ? 'rotate(180deg)' : 'none', flexShrink: 0 }}>
+      <path d="M6 9l6 6 6-6" stroke="var(--ink-mut)" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function timeAgo(ts: number): string {
   const s = Math.floor((Date.now() - ts) / 1000);
   if (s < 60) return 'poco fa';
@@ -82,6 +91,7 @@ export function HomeScreen() {
   const [botMode, setBotMode] = useState('1005');
   const [botDiff, setBotDiff] = useState<Difficulty>('medium');
   const [saved, setSaved] = useState<LocalSave | null>(() => loadLocalGame());
+  const [open, setOpen] = useState<'new' | 'join' | 'bot' | null>(null);
   const user = store.user;
 
   function startComputer() {
@@ -177,10 +187,94 @@ export function HomeScreen() {
           </div>
         </div>
 
-        {/* riprendi partita salvata (vs computer) */}
+        {/* tre sezioni ad accordion: si apre una alla volta */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {([
+            { key: 'new',  icon: 'cards', title: 'Nuova partita',    sub: 'Crea un tavolo e invita un amico' },
+            { key: 'join', icon: 'link',  title: 'Entra con codice', sub: 'Hai un codice a 4 lettere?' },
+            { key: 'bot',  icon: 'bolt',  title: 'Sfida il computer', sub: 'Gioca offline contro il bot' },
+          ] as const).map(({ key, icon, title, sub }) => {
+            const isOpen = open === key;
+            return (
+              <div key={key} style={{ background: 'oklch(0.255 0.026 168 / 0.85)', borderRadius: 22, overflow: 'hidden',
+                border: '1.5px solid ' + (isOpen ? 'oklch(0.81 0.125 86 / 0.5)' : 'var(--line)'),
+                boxShadow: 'var(--sh-1)', backdropFilter: 'blur(6px)', transition: 'border-color .2s' }}>
+                <button onClick={() => setOpen(isOpen ? null : key)} aria-expanded={isOpen}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 14, padding: '15px 16px',
+                    background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 13, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'var(--gold-soft)', border: '1.5px solid oklch(0.81 0.125 86 / 0.4)', color: 'var(--gold)' }}>
+                    <Icon name={icon} size={22} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: 'var(--font-disp)', fontWeight: 700, fontSize: 17, color: 'var(--ink)' }}>{title}</div>
+                    <div style={{ fontSize: 12.5, color: 'var(--ink-mut)', marginTop: 1 }}>{sub}</div>
+                  </div>
+                  <Chevron open={isOpen} />
+                </button>
+
+                {isOpen && (
+                  <div style={{ padding: '0 16px 18px', borderTop: '1px solid var(--line)', paddingTop: 16 }}>
+                    {key === 'new' && (<>
+                      <ModeSeg value={mode} onChange={setMode} />
+                      <div style={{ fontSize: 12.5, color: 'var(--ink-mut)', margin: '11px 2px 16px', textAlign: 'center' }}>{MODE_DESC[mode]}</div>
+                      <button className="btn btn-gold" style={{ width: '100%', opacity: loading ? 0.7 : 1 }} onClick={createRoom} disabled={loading}>
+                        <Icon name="cards" size={20} /> Crea e invita un amico
+                      </button>
+                    </>)}
+
+                    {key === 'join' && (<>
+                      {/* 4 caselle con input di sistema invisibile sopra (tastiera nativa) */}
+                      <label style={{ position: 'relative', display: 'block' }}>
+                        <div style={{ display: 'flex', gap: 7 }}>
+                          {[0, 1, 2, 3].map((i) => (
+                            <div key={i} style={{ flex: 1, aspectRatio: '1', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              background: 'oklch(0.30 0.02 168 / 0.6)', border: '1.5px solid ' + (code[i] ? 'oklch(0.81 0.125 86 / 0.6)' : 'var(--line)'),
+                              fontFamily: 'var(--font-disp)', fontWeight: 700, fontSize: 24, color: 'var(--gold)' }}>
+                              {code[i] ?? ''}
+                            </div>
+                          ))}
+                        </div>
+                        <input
+                          value={code}
+                          onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4))}
+                          maxLength={4}
+                          autoCapitalize="characters"
+                          autoComplete="off"
+                          autoCorrect="off"
+                          spellCheck={false}
+                          inputMode="text"
+                          aria-label="Codice partita"
+                          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0,
+                            border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 16, color: 'transparent' }}
+                        />
+                      </label>
+                      <button className={'btn ' + (code.length === 4 ? 'btn-gold' : 'btn-ghost')}
+                        style={{ width: '100%', marginTop: 12, opacity: code.length === 4 && !loading ? 1 : .5 }}
+                        onClick={joinRoom} disabled={code.length !== 4 || loading}>
+                        <Icon name="cards" size={20} /> Entra in partita
+                      </button>
+                    </>)}
+
+                    {key === 'bot' && (<>
+                      <DiffSeg value={botDiff} onChange={setBotDiff} />
+                      <div style={{ fontSize: 12.5, color: 'var(--ink-mut)', margin: '11px 2px 14px', textAlign: 'center' }}>{DIFF_DESC[botDiff]}</div>
+                      <ModeSeg value={botMode} onChange={setBotMode} />
+                      <button className="btn btn-gold" style={{ width: '100%', marginTop: 16 }} onClick={startComputer}>
+                        <Icon name="cards" size={20} /> Gioca col computer
+                      </button>
+                    </>)}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* riprendi partita salvata (vs computer) — in fondo */}
         {saved && (
           <div style={{ background: 'linear-gradient(160deg, oklch(0.31 0.04 168 / 0.92), oklch(0.24 0.03 168 / 0.92))',
-            border: '1.5px solid oklch(0.81 0.125 86 / 0.5)', borderRadius: 22, padding: 16, marginBottom: 14, boxShadow: 'var(--sh-1)' }}>
+            border: '1.5px solid oklch(0.81 0.125 86 / 0.5)', borderRadius: 22, padding: 16, marginTop: 18, boxShadow: 'var(--sh-1)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
               <div className="t-label" style={{ color: 'var(--gold-2)' }}>Riprendi partita</div>
               <button onClick={deleteSave} aria-label="Elimina partita salvata"
@@ -204,62 +298,6 @@ export function HomeScreen() {
             </button>
           </div>
         )}
-
-        {/* nuova partita */}
-        <div style={{ background: 'oklch(0.255 0.026 168 / 0.85)', border: '1px solid var(--line)', borderRadius: 22, padding: 18, boxShadow: 'var(--sh-1)', backdropFilter: 'blur(6px)' }}>
-          <div className="t-label" style={{ marginBottom: 12 }}>Nuova partita</div>
-          <ModeSeg value={mode} onChange={setMode} />
-          <div style={{ fontSize: 12.5, color: 'var(--ink-mut)', margin: '11px 2px 16px', textAlign: 'center' }}>{MODE_DESC[mode]}</div>
-          <button className="btn btn-gold" style={{ width: '100%', opacity: loading ? 0.7 : 1 }} onClick={createRoom} disabled={loading}>
-            <Icon name="cards" size={20} /> Crea e invita un amico
-          </button>
-        </div>
-
-        {/* sfida il computer (offline) */}
-        <div style={{ background: 'oklch(0.255 0.026 168 / 0.85)', border: '1px solid var(--line)', borderRadius: 22, padding: 18, marginTop: 14, boxShadow: 'var(--sh-1)' }}>
-          <div className="t-label" style={{ marginBottom: 12 }}>Sfida il computer</div>
-          <DiffSeg value={botDiff} onChange={setBotDiff} />
-          <div style={{ fontSize: 12.5, color: 'var(--ink-mut)', margin: '11px 2px 14px', textAlign: 'center' }}>{DIFF_DESC[botDiff]}</div>
-          <ModeSeg value={botMode} onChange={setBotMode} />
-          <button className="btn btn-gold" style={{ width: '100%', marginTop: 16 }} onClick={startComputer}>
-            <Icon name="cards" size={20} /> Gioca col computer
-          </button>
-        </div>
-
-        {/* entra con codice */}
-        <div style={{ background: 'oklch(0.255 0.026 168 / 0.85)', border: '1px solid var(--line)', borderRadius: 22, padding: 18, marginTop: 14, boxShadow: 'var(--sh-1)' }}>
-          <div className="t-label" style={{ marginBottom: 12 }}>Entra con codice</div>
-          {/* 4 caselle con input di sistema invisibile sopra (tastiera nativa) */}
-          <label style={{ position: 'relative', display: 'block' }}>
-            <div style={{ display: 'flex', gap: 7 }}>
-              {[0, 1, 2, 3].map((i) => (
-                <div key={i} style={{ flex: 1, aspectRatio: '1', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: 'oklch(0.30 0.02 168 / 0.6)', border: '1.5px solid ' + (code[i] ? 'oklch(0.81 0.125 86 / 0.6)' : 'var(--line)'),
-                  fontFamily: 'var(--font-disp)', fontWeight: 700, fontSize: 24, color: 'var(--gold)' }}>
-                  {code[i] ?? ''}
-                </div>
-              ))}
-            </div>
-            <input
-              value={code}
-              onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4))}
-              maxLength={4}
-              autoCapitalize="characters"
-              autoComplete="off"
-              autoCorrect="off"
-              spellCheck={false}
-              inputMode="text"
-              aria-label="Codice partita"
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0,
-                border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 16, color: 'transparent' }}
-            />
-          </label>
-          <button className={'btn ' + (code.length === 4 ? 'btn-gold' : 'btn-ghost')}
-            style={{ width: '100%', marginTop: 12, opacity: code.length === 4 && !loading ? 1 : .5 }}
-            onClick={joinRoom} disabled={code.length !== 4 || loading}>
-            <Icon name="cards" size={20} /> Entra in partita
-          </button>
-        </div>
 
         <div style={{ textAlign: 'center', marginTop: 22, fontSize: 12, color: 'var(--ink-dim)' }}>
           108 carte · 2 mazzi · 2 giocatori

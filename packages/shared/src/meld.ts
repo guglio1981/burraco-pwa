@@ -151,7 +151,15 @@ export function canonicalizeMeld(cards: Card[]): Card[] {
   // Determina quali 2 sono naturali in questa sequenza
   // (scelgo il subset di twos con seme == seme della sequenza se c'è, altrimenti wild)
   const seqSuit = rest[0]?.suit;
-  const nat2inSeq = seqSuit ? twos.filter((c) => c.suit === seqSuit) : [];
+  // Quanti 2 sono NATURALI in questa interpretazione lo deduco da `best` (meno
+  // matte possibili), NON dal seme: un 2 dello stesso seme della scala può
+  // comunque servire come MATTA per colmare un buco. In una sequenza al più UN
+  // 2 è naturale (due occuperebbero lo stesso rango). Senza questo, un 2 di seme
+  // giusto restava inchiodato in fondo lasciando il buco scoperto.
+  const naturalTwoCount = Math.max(0, best.naturals - rest.length);
+  const nat2inSeq = seqSuit
+    ? twos.filter((c) => c.suit === seqSuit).slice(0, naturalTwoCount)
+    : [];
   const wild2inSeq = twos.filter((c) => !nat2inSeq.includes(c));
 
   const naturalsRaw = [...rest, ...nat2inSeq];
@@ -170,25 +178,25 @@ export function canonicalizeMeld(cards: Card[]): Card[] {
 
   if (wilds.length === 0) return naturals;
 
-  // Trova l'eventuale buco tra le naturali (diff==2)
+  // Inserisci una matta in OGNI buco interno (diff>1 tra naturali consecutive);
+  // le matte in eccedenza estendono l'estremità.
   const idxs = naturals.map((c) => idxOf(c, aceHigh));
-  let gapPos = -1;
-  for (let i = 1; i < idxs.length; i++) {
-    if ((idxs[i]! - idxs[i - 1]!) === 2) { gapPos = i; break; }
+  const pool = [...wilds];
+  const result: Card[] = [];
+  for (let i = 0; i < naturals.length; i++) {
+    if (i > 0) {
+      const missing = idxs[i]! - idxs[i - 1]! - 1; // carte mancanti tra le due
+      for (let g = 0; g < missing && pool.length; g++) result.push(pool.shift()!);
+    }
+    result.push(naturals[i]!);
   }
 
-  if (gapPos >= 0) {
-    // wild nel buco da colmare: [nat0..gapPos-1, wild, natGapPos..]
-    const result = [...naturals];
-    result.splice(gapPos, 0, ...wilds);
-    return result;
+  // Matte avanzate: estendono verso il BASSO (carte più piccole), TRANNE quando
+  // l'asso è basso ed è già la carta minima: lì sotto non c'è nulla, quindi
+  // estendono verso l'ALTO (in coda).
+  if (pool.length > 0) {
+    if (!aceHigh && idxs[0] === 1) result.push(...pool);
+    else result.unshift(...pool);
   }
-
-  // Nessun buco da colmare: il wild va IN FONDO (carta più piccola), TRANNE quando
-  // l'asso è basso ed è già la carta minima: lì sotto non può esserci nulla, quindi
-  // il wild estende verso l'ALTO (in coda).
-  if (!aceHigh && naturals.length > 0 && idxOf(naturals[0]!, aceHigh) === 1) {
-    return [...naturals, ...wilds];
-  }
-  return [...wilds, ...naturals];
+  return result;
 }
