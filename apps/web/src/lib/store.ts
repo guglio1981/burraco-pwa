@@ -4,8 +4,9 @@ import type { PublicView, Mode } from '@burraco/shared';
 import type { PublicUser, RoomView } from './api.js';
 import { clearActiveRoom } from './session.js';
 
-/** Stato della trattativa di rivincita (solo online). */
-export type RematchStatus = 'idle' | 'waiting' | 'declined';
+/** Stato della trattativa di rivincita (solo online).
+ *  'left' = l'avversario è uscito dalla stanza a fine partita. */
+export type RematchStatus = 'idle' | 'waiting' | 'declined' | 'left';
 
 export type Screen =
   | 'login'

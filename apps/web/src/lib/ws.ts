@@ -16,6 +16,8 @@ export type WsHandler = {
   onRematchOffer?: (mode: Mode) => void;
   /** Il guest ha rifiutato la rivincita (lato host). */
   onRematchDecline?: () => void;
+  /** L'avversario è uscito dalla stanza a fine partita. */
+  onOpponentLeftRoom?: () => void;
 };
 
 interface ServerMsg {
@@ -100,6 +102,9 @@ export class BurracoWS {
       case 'rematch_decline':
         this.handlers.onRematchDecline?.();
         break;
+      case 'rematch_left':
+        this.handlers.onOpponentLeftRoom?.();
+        break;
       case 'error':
         if (msg.error) this.handlers.onError?.(msg.error);
         break;
@@ -138,6 +143,14 @@ export class BurracoWS {
   /** SOLO guest: accetta la rivincita → parte una nuova partita nella stessa stanza. */
   rematchAccept(mode: Mode): void {
     this.sendRaw({ t: 'rematch_accept', roomId: this.roomId, mode });
+  }
+
+  /** Esco dalla stanza a fine partita: avviso l'avversario e dimentico la stanza
+   *  (così un'eventuale riconnessione non mi riporta dentro la partita conclusa). */
+  leaveRoom(): void {
+    if (this.roomId) this.sendRaw({ t: 'rematch_leave', roomId: this.roomId });
+    this.roomId = '';
+    this.seat = null;
   }
 
   destroy(): void {

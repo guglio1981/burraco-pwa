@@ -30,7 +30,8 @@ type ClientMsg =
   | { t: 'abandon'; roomId: string }
   | { t: 'rematch_offer'; roomId: string; mode: Mode }   // SOLO host: propone la rivincita
   | { t: 'rematch_decline'; roomId: string }             // SOLO guest: rifiuta
-  | { t: 'rematch_accept'; roomId: string; mode: Mode }; // SOLO guest: accetta → nuova partita
+  | { t: 'rematch_accept'; roomId: string; mode: Mode }  // SOLO guest: accetta → nuova partita
+  | { t: 'rematch_leave'; roomId: string };              // esco dalla stanza a fine partita (avvisa l'altro)
 
 const send = (ws: WebSocket, obj: unknown): void => {
   if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
@@ -96,6 +97,8 @@ export class GameHub {
         return this.handleRematchDecline(conn);
       case 'rematch_accept':
         return this.handleRematchAccept(conn, msg.mode);
+      case 'rematch_leave':
+        return this.handleRematchLeave(conn);
       default:
         return send(conn.ws, { t: 'error', error: 'Comando sconosciuto' });
     }
@@ -220,6 +223,16 @@ export class GameHub {
     if (out.status !== 'ok') return send(conn.ws, { t: 'error', error: out.status === 'error' ? out.error : 'Rivincita non disponibile' });
     await this.broadcastRoom(conn.roomId);
     this.broadcastState(conn.roomId, out.state);
+  }
+
+  /** A fine partita esco dalla stanza: avviso l'avversario e mi stacco (così,
+   *  se proponeva la rivincita, non resta in attesa all'infinito). */
+  private handleRematchLeave(conn: Conn): void {
+    if (!conn.roomId || !conn.seat) return;
+    this.sendToOpponent(conn.roomId, conn.seat, { t: 'rematch_left' });
+    this.detach(conn);
+    conn.roomId = null;
+    conn.seat = null;
   }
 
   private scheduleFromState(roomId: string, state: GameState): void {

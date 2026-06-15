@@ -123,6 +123,7 @@ export function HomeScreen() {
         onAbandoned: () => store.notifyOpponentLeft(),
         onRematchOffer: (m) => store.setRematchIncoming(m),
         onRematchDecline: () => store.setRematchStatus('declined'),
+        onOpponentLeftRoom: () => { store.setRematchIncoming(null); store.setRematchStatus('left'); },
       });
       wsClient.subscribe(room.id);
       store.setScreen('waiting');
@@ -148,6 +149,7 @@ export function HomeScreen() {
         onAbandoned: () => store.notifyOpponentLeft(),
         onRematchOffer: (m) => store.setRematchIncoming(m),
         onRematchDecline: () => store.setRematchStatus('declined'),
+        onOpponentLeftRoom: () => { store.setRematchIncoming(null); store.setRematchStatus('left'); },
       });
       wsClient.subscribe(room.id);
       store.setScreen('waiting');

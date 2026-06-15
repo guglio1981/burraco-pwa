@@ -73,6 +73,8 @@ export function VictoryScreen() {
   const isHost = view.you === 'host';
 
   function goHome() {
+    // se sono in una partita online, avviso l'avversario che esco dalla stanza
+    if (!gameClient.isLocal) wsClient.leaveRoom();
     clearActiveRoom();
     clearLocalGame();
     store.setRoom(null);
@@ -146,6 +148,15 @@ export function VictoryScreen() {
               <button className="btn btn-ghost" style={{ flex: 1 }} onClick={goHome}>Home</button>
               <button className="btn btn-gold" style={{ flex: 1.4 }} onClick={rematchLocal}>Rivincita</button>
             </div>
+          ) : store.rematchStatus === 'left' ? (
+            // l'avversario è uscito dalla stanza: niente rivincita possibile
+            <>
+              <div style={{ textAlign: 'center', padding: '12px', borderRadius: 14,
+                background: 'oklch(0.255 0.026 168 / 0.85)', border: '1px solid var(--line)', color: 'var(--ink-mut)', fontSize: 14 }}>
+                <b style={{ color: 'var(--ink)' }}>{oppName}</b> ha lasciato la partita.
+              </div>
+              <button className="btn btn-gold" style={{ width: '100%' }} onClick={goHome}>Home</button>
+            </>
           ) : isHost ? (
             // HOST online: propone la rivincita scegliendo il tipo
             <>
