@@ -1,8 +1,11 @@
 /* Stato globale (zustand) — router guidato da stato */
 import { create } from 'zustand';
-import type { PublicView } from '@burraco/shared';
+import type { PublicView, Mode } from '@burraco/shared';
 import type { PublicUser, RoomView } from './api.js';
 import { clearActiveRoom } from './session.js';
+
+/** Stato della trattativa di rivincita (solo online). */
+export type RematchStatus = 'idle' | 'waiting' | 'declined';
 
 export type Screen =
   | 'login'
@@ -27,6 +30,10 @@ export interface AppState {
   vsComputer: boolean;
   /** Salta l'animazione di distribuzione al prossimo render del tavolo (es. ripresa partita) */
   suppressDeal: boolean;
+  /** GUEST: l'host ha proposto la rivincita con questo tipo (null = nessuna offerta). */
+  rematchIncoming: Mode | null;
+  /** HOST: stato della propria proposta di rivincita. */
+  rematchStatus: RematchStatus;
 
   setScreen: (s: Screen) => void;
   setUser: (u: PublicUser | null) => void;
@@ -38,6 +45,8 @@ export interface AppState {
   setOpponentLeft: (v: boolean) => void;
   setVsComputer: (v: boolean) => void;
   setSuppressDeal: (v: boolean) => void;
+  setRematchIncoming: (m: Mode | null) => void;
+  setRematchStatus: (s: RematchStatus) => void;
   /** Notifica abbandono avversario: mostra popup solo se sono ancora in partita */
   notifyOpponentLeft: () => void;
   logout: () => void;
@@ -53,6 +62,8 @@ export const useStore = create<AppState>((set, get) => ({
   opponentLeft: false,
   vsComputer: false,
   suppressDeal: false,
+  rematchIncoming: null,
+  rematchStatus: 'idle',
 
   setScreen: (screen) => set({ screen }),
   setUser: (user) => set({ user }),
@@ -61,6 +72,10 @@ export const useStore = create<AppState>((set, get) => ({
     // naviga automaticamente in base alla fase
     const phase = gameView.phase;
     let screen: Screen = get().screen;
+    // una nuova partita in corso (es. rivincita accettata) azzera la trattativa
+    const rematchReset = (phase === 'draw' || phase === 'play')
+      ? { rematchIncoming: null, rematchStatus: 'idle' as RematchStatus }
+      : {};
     if (phase === 'draw' || phase === 'play' || phase === 'wait' || phase === 'paused') {
       screen = 'table';
     } else if (phase === 'inter_round') {
@@ -68,7 +83,7 @@ export const useStore = create<AppState>((set, get) => ({
     } else if (phase === 'finished') {
       screen = 'victory';
     }
-    set({ gameView, screen, selectedIds: [] });
+    set({ gameView, screen, selectedIds: [], ...rematchReset });
   },
   showToast: (msg, ms = 1800) => {
     set({ toast: msg });
@@ -83,10 +98,12 @@ export const useStore = create<AppState>((set, get) => ({
   setOpponentLeft: (opponentLeft) => set({ opponentLeft }),
   setVsComputer: (vsComputer) => set({ vsComputer }),
   setSuppressDeal: (suppressDeal) => set({ suppressDeal }),
+  setRematchIncoming: (rematchIncoming) => set({ rematchIncoming }),
+  setRematchStatus: (rematchStatus) => set({ rematchStatus }),
   notifyOpponentLeft: () => {
     const s = get().screen;
     // ignora se sono già fuori dalla partita (login/home) — es. dopo aver abbandonato io
     if (s !== 'login' && s !== 'home') set({ opponentLeft: true });
   },
-  logout: () => { clearActiveRoom(); set({ user: null, room: null, gameView: null, screen: 'login', selectedIds: [], opponentLeft: false, vsComputer: false, suppressDeal: false }); },
+  logout: () => { clearActiveRoom(); set({ user: null, room: null, gameView: null, screen: 'login', selectedIds: [], opponentLeft: false, vsComputer: false, suppressDeal: false, rematchIncoming: null, rematchStatus: 'idle' }); },
 }));

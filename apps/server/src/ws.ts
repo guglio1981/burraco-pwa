@@ -5,11 +5,13 @@
    ============================================================ */
 import type { Server } from 'node:http';
 import { WebSocketServer, WebSocket } from 'ws';
-import type { GameState, Seat, Move } from '@burraco/shared';
+import type { GameState, Seat, Move, Mode } from '@burraco/shared';
 import { buildView, TURN_MS } from '@burraco/shared';
 import { verifyToken } from './auth.js';
 import { getRoom, roomView, seatOf } from './rooms.js';
-import { applyMoveTx, applyTimeoutTx, nextRoundTx, abandonTx, loadGame } from './game.js';
+import { applyMoveTx, applyTimeoutTx, nextRoundTx, abandonTx, rematchTx, loadGame } from './game.js';
+
+const VALID_MODES: ReadonlySet<Mode> = new Set(['fast', '1005', '2005']);
 import { TurnTimers } from './timers.js';
 
 interface Conn {
@@ -25,7 +27,10 @@ type ClientMsg =
   | { t: 'resync'; roomId: string }
   | { t: 'move'; roomId: string; baseRev: number; move: Move }
   | { t: 'next_round'; roomId: string }
-  | { t: 'abandon'; roomId: string };
+  | { t: 'abandon'; roomId: string }
+  | { t: 'rematch_offer'; roomId: string; mode: Mode }   // SOLO host: propone la rivincita
+  | { t: 'rematch_decline'; roomId: string }             // SOLO guest: rifiuta
+  | { t: 'rematch_accept'; roomId: string; mode: Mode }; // SOLO guest: accetta → nuova partita
 
 const send = (ws: WebSocket, obj: unknown): void => {
   if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
@@ -85,6 +90,12 @@ export class GameHub {
         return this.handleNextRound(conn);
       case 'abandon':
         return this.handleAbandon(conn);
+      case 'rematch_offer':
+        return this.handleRematchOffer(conn, msg.mode);
+      case 'rematch_decline':
+        return this.handleRematchDecline(conn);
+      case 'rematch_accept':
+        return this.handleRematchAccept(conn, msg.mode);
       default:
         return send(conn.ws, { t: 'error', error: 'Comando sconosciuto' });
     }
@@ -174,6 +185,41 @@ export class GameHub {
       }
     }
     this.broadcastState(roomId, out.state);
+  }
+
+  /** Invia un payload all'altro occupante della stanza (l'avversario di `seat`). */
+  private sendToOpponent(roomId: string, seat: Seat, payload: unknown): void {
+    const set = this.rooms.get(roomId);
+    if (!set) return;
+    for (const c of set) {
+      if (c.seat && c.seat !== seat) send(c.ws, payload);
+    }
+  }
+
+  /** SOLO l'host può proporre la rivincita; l'offerta viene inoltrata al guest. */
+  private async handleRematchOffer(conn: Conn, mode: Mode): Promise<void> {
+    if (!conn.roomId || !conn.seat) return;
+    if (conn.seat !== 'host') return send(conn.ws, { t: 'error', error: 'Solo l’host può proporre la rivincita' });
+    if (!VALID_MODES.has(mode)) return send(conn.ws, { t: 'error', error: 'Modalità non valida' });
+    this.sendToOpponent(conn.roomId, conn.seat, { t: 'rematch_offer', mode });
+  }
+
+  /** SOLO il guest rifiuta; l'host viene avvisato così può riproporre con altro tipo. */
+  private async handleRematchDecline(conn: Conn): Promise<void> {
+    if (!conn.roomId || !conn.seat) return;
+    if (conn.seat !== 'guest') return;
+    this.sendToOpponent(conn.roomId, conn.seat, { t: 'rematch_decline' });
+  }
+
+  /** SOLO il guest accetta → nuova partita nella stessa stanza, stato a entrambi. */
+  private async handleRematchAccept(conn: Conn, mode: Mode): Promise<void> {
+    if (!conn.roomId || !conn.seat) return;
+    if (conn.seat !== 'guest') return;
+    if (!VALID_MODES.has(mode)) return send(conn.ws, { t: 'error', error: 'Modalità non valida' });
+    const out = await rematchTx(conn.roomId, mode);
+    if (out.status !== 'ok') return send(conn.ws, { t: 'error', error: out.status === 'error' ? out.error : 'Rivincita non disponibile' });
+    await this.broadcastRoom(conn.roomId);
+    this.broadcastState(conn.roomId, out.state);
   }
 
   private scheduleFromState(roomId: string, state: GameState): void {

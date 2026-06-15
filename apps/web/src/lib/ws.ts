@@ -1,5 +1,5 @@
 /* WebSocket client: connect/reconnect, move, stale→resync */
-import type { Move, PublicView, Seat } from '@burraco/shared';
+import type { Move, PublicView, Seat, Mode } from '@burraco/shared';
 import type { RoomView } from './api.js';
 
 const WS_URL = import.meta.env.VITE_WS_URL ?? 'ws://localhost:8787';
@@ -12,6 +12,10 @@ export type WsHandler = {
   onAbandoned?: () => void;
   onConnected?: () => void;
   onDisconnected?: () => void;
+  /** L'host ha proposto la rivincita con questo tipo di partita (lato guest). */
+  onRematchOffer?: (mode: Mode) => void;
+  /** Il guest ha rifiutato la rivincita (lato host). */
+  onRematchDecline?: () => void;
 };
 
 interface ServerMsg {
@@ -22,6 +26,7 @@ interface ServerMsg {
   rev?: number;
   action?: string;
   seat?: Seat;
+  mode?: Mode;
 }
 
 export class BurracoWS {
@@ -89,6 +94,12 @@ export class BurracoWS {
       case 'abandoned':
         this.handlers.onAbandoned?.();
         break;
+      case 'rematch_offer':
+        if (msg.mode) this.handlers.onRematchOffer?.(msg.mode);
+        break;
+      case 'rematch_decline':
+        this.handlers.onRematchDecline?.();
+        break;
       case 'error':
         if (msg.error) this.handlers.onError?.(msg.error);
         break;
@@ -112,6 +123,21 @@ export class BurracoWS {
 
   abandon(): void {
     this.sendRaw({ t: 'abandon', roomId: this.roomId });
+  }
+
+  /** SOLO host: propone la rivincita con un tipo di partita. */
+  rematchOffer(mode: Mode): void {
+    this.sendRaw({ t: 'rematch_offer', roomId: this.roomId, mode });
+  }
+
+  /** SOLO guest: rifiuta la rivincita proposta dall'host. */
+  rematchDecline(): void {
+    this.sendRaw({ t: 'rematch_decline', roomId: this.roomId });
+  }
+
+  /** SOLO guest: accetta la rivincita → parte una nuova partita nella stessa stanza. */
+  rematchAccept(mode: Mode): void {
+    this.sendRaw({ t: 'rematch_accept', roomId: this.roomId, mode });
   }
 
   destroy(): void {

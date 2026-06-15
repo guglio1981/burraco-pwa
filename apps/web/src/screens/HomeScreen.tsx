@@ -121,6 +121,8 @@ export function HomeScreen() {
         onRoom: (r) => store.setRoom(r),
         onError: (e) => store.showToast(e),
         onAbandoned: () => store.notifyOpponentLeft(),
+        onRematchOffer: (m) => store.setRematchIncoming(m),
+        onRematchDecline: () => store.setRematchStatus('declined'),
       });
       wsClient.subscribe(room.id);
       store.setScreen('waiting');
@@ -144,6 +146,8 @@ export function HomeScreen() {
         onRoom: (r) => store.setRoom(r),
         onError: (e) => store.showToast(e),
         onAbandoned: () => store.notifyOpponentLeft(),
+        onRematchOffer: (m) => store.setRematchIncoming(m),
+        onRematchDecline: () => store.setRematchStatus('declined'),
       });
       wsClient.subscribe(room.id);
       store.setScreen('waiting');

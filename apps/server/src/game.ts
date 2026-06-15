@@ -3,7 +3,7 @@
    mosse con concorrenza ottimistica (rev) in transazione,
    timeout di turno, manche successiva.
    ============================================================ */
-import type { GameState, Seat, Move } from '@burraco/shared';
+import type { GameState, Seat, Move, Mode } from '@burraco/shared';
 import { newGame, applyMove, applyTimeout, startNextRound, buildView, otherSeat, type PublicView } from '@burraco/shared';
 import { query, tx } from './db.js';
 import type { RoomRow } from './rooms.js';
@@ -107,6 +107,35 @@ export async function nextRoundTx(roomId: string, opts: { now?: number } = {}): 
     if (row.state.phase !== 'inter_round') return { status: 'error', error: 'Manche non conclusa' };
     const ns = startNextRound(row.state, { now: opts.now });
     await persist(client, roomId, ns);
+    return { status: 'ok', state: ns, rev: ns.rev };
+  });
+}
+
+/** Rivincita nella STESSA stanza: sostituisce la partita conclusa con una nuova
+ *  (eventualmente con un tipo diverso). Il perdente inizia (pareggio → host).
+ *  Rimette room.status='playing', aggiorna game_mode e ribumpa la scadenza. */
+export async function rematchTx(roomId: string, mode: Mode, opts: { now?: number } = {}): Promise<MoveOutcome> {
+  const now = opts.now ?? Date.now();
+  return tx(async (client) => {
+    const sel = await client.query<{ state: GameState; rev: number }>(
+      'SELECT state, rev FROM games WHERE room_id = $1 FOR UPDATE',
+      [roomId],
+    );
+    const row = sel.rows[0];
+    if (!row) return { status: 'error', error: 'Partita non trovata' };
+    if (row.state.phase !== 'finished') return { status: 'error', error: 'La partita non è conclusa' };
+    // perdente di mano (chi NON ha vinto) inizia; pareggio o assente → host
+    const firstTurn: Seat = row.state.winner ? otherSeat(row.state.winner) : 'host';
+    const ns = newGame(mode, { now, firstTurn });
+    await client.query(
+      "UPDATE games SET state = $1::jsonb, rev = $2, status = 'playing', updated_at = now() WHERE room_id = $3",
+      [JSON.stringify(ns), ns.rev, roomId],
+    );
+    const expires = new Date(now + 30 * 60 * 1000).toISOString();
+    await client.query(
+      "UPDATE rooms SET game_mode = $1, status = 'playing', expires_at = $2 WHERE id = $3",
+      [mode, expires, roomId],
+    );
     return { status: 'ok', state: ns, rev: ns.rev };
   });
 }
