@@ -110,6 +110,7 @@ function closingScenario(): { state: GameState; handCard: Card } {
     pozzo: { host: [], guest: rest.slice(11, 22) },
     melds: { host: [burraco], guest: [] },
     pozzoPicked: { host: true, guest: false },
+    pozzoPending: { host: false, guest: false },
     scores: { host: 0, guest: 0 },
     turn: 'host',
     phase: 'play',
@@ -124,8 +125,8 @@ function closingScenario(): { state: GameState; handCard: Card } {
   return { state, handCard };
 }
 
-describe('scarto ultima carta senza pozzetto → prende il pozzetto (spec §9)', () => {
-  it('svuotare la mano scartando, pozzetto non ancora preso: prende pozzetto, passa il turno, NON chiude', () => {
+describe('scarto ultima carta senza pozzetto → pozzetto distribuito DOPO il turno avversario (spec §9)', () => {
+  function pendingScenario(): { state: GameState; handCard: Card } {
     const pool = buildDeck();
     // host: 1 sola carta in mano, pozzetto NON preso (11 carte nel pozzo)
     const handCard = pool[0]!;
@@ -136,6 +137,7 @@ describe('scarto ultima carta senza pozzetto → prende il pozzetto (spec §9)',
       pozzo: { host: pool.slice(12, 23), guest: pool.slice(23, 34) },
       melds: { host: [], guest: [] },
       pozzoPicked: { host: false, guest: false },
+      pozzoPending: { host: false, guest: false },
       scores: { host: 0, guest: 0 },
       turn: 'host',
       phase: 'play',
@@ -147,18 +149,42 @@ describe('scarto ultima carta senza pozzetto → prende il pozzetto (spec §9)',
       mustDiscardDifferentId: null,
       lastRound: null,
     };
+    return { state, handCard };
+  }
+
+  it('svuotare la mano scartando: NON prende subito il pozzetto, resta in attesa, mano vuota, turno all\'avversario', () => {
+    const { state, handCard } = pendingScenario();
     expect(checkConservation(state).ok).toBe(true);
     const r = applyMove(state, 'host', { type: 'DISCARD', cardId: handCard.id }, { now: 1 });
     expect(r.ok).toBe(true);
-    // pozzetto preso, mano ripristinata a 11
-    expect(r.state!.pozzoPicked.host).toBe(true);
-    expect(r.state!.hands.host.length).toBe(11);
-    expect(r.state!.pozzo.host.length).toBe(0);
-    // NON è una chiusura: la manche prosegue e il turno passa
+    // pozzetto NON ancora preso: in attesa, mano vuota, pozzo ancora pieno
+    expect(r.state!.pozzoPending.host).toBe(true);
+    expect(r.state!.pozzoPicked.host).toBe(false);
+    expect(r.state!.hands.host.length).toBe(0);
+    expect(r.state!.pozzo.host.length).toBe(11);
+    // NON è una chiusura: la manche prosegue e il turno passa all'avversario
     expect(r.state!.phase).toBe('draw');
     expect(r.state!.turn).toBe('guest');
     expect(r.state!.lastRound).toBeNull();
     expect(checkConservation(r.state!).ok).toBe(true);
+  });
+
+  it('il pozzetto viene distribuito all\'inizio del turno successivo (dopo che l\'avversario ha giocato)', () => {
+    const { state, handCard } = pendingScenario();
+    // host scarta l'ultima → pending
+    const afterHost = applyMove(state, 'host', { type: 'DISCARD', cardId: handCard.id }, { now: 1 }).state!;
+    // guest gioca un turno normale: pesca e scarta
+    const guestDrew = applyMove(afterHost, 'guest', { type: 'DRAW_DECK' }, { now: 2 }).state!;
+    const gCard = guestDrew.hands.guest[0]!;
+    const afterGuest = applyMove(guestDrew, 'guest', { type: 'DISCARD', cardId: gCard.id }, { now: 3 }).state!;
+    // ora è di nuovo il turno di host: il pozzetto è stato distribuito
+    expect(afterGuest.turn).toBe('host');
+    expect(afterGuest.pozzoPending.host).toBe(false);
+    expect(afterGuest.pozzoPicked.host).toBe(true);
+    expect(afterGuest.hands.host.length).toBe(11);
+    expect(afterGuest.pozzo.host.length).toBe(0);
+    expect(afterGuest.phase).toBe('draw'); // host deve ancora pescare
+    expect(checkConservation(afterGuest).ok).toBe(true);
   });
 });
 
@@ -182,6 +208,7 @@ describe('calata che lascerebbe 1 carta non scartabile (anti-incastro)', () => {
       pozzo: { host: [], guest: rest.slice(11, 22) },
       melds: { host: [], guest: [] }, // nessun burraco
       pozzoPicked: { host: true, guest: false }, // pozzetto GIÀ preso
+      pozzoPending: { host: false, guest: false },
       scores: { host: 0, guest: 0 },
       turn: 'host',
       phase: 'play',

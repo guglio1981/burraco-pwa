@@ -66,6 +66,10 @@ export interface GameState {
   pozzo: Record<Seat, Card[]>;        // pozzetto host / guest (11 carte)
   melds: Record<Seat, Card[][]>;      // scale calate host / guest
   pozzoPicked: Record<Seat, boolean>; // pozzetto già preso?
+  /** Pozzetto "in attesa di distribuzione": hai svuotato la mano SCARTANDO senza
+   *  averlo ancora preso → lo ricevi all'inizio del tuo turno successivo, cioè
+   *  DOPO il turno dell'avversario (spec §9, variante). */
+  pozzoPending: Record<Seat, boolean>;
   scores: Record<Seat, number>;       // punteggio cumulativo
   turn: Seat;
   phase: Phase;

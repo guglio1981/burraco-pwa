@@ -39,6 +39,7 @@ export function newGame(
     pozzo: d.pozzo,
     melds: { host: [], guest: [] },
     pozzoPicked: { host: false, guest: false },
+    pozzoPending: { host: false, guest: false },
     scores: { host: 0, guest: 0 },
     turn: opts.firstTurn ?? 'host',
     phase: 'draw',
@@ -63,6 +64,7 @@ export function startNextRound(state: GameState, opts: MoveOpts = {}): GameState
     pozzo: d.pozzo,
     melds: { host: [], guest: [] },
     pozzoPicked: { host: false, guest: false },
+    pozzoPending: { host: false, guest: false },
     scores: { ...state.scores },
     turn: firstTurn,
     phase: 'draw',
@@ -105,6 +107,21 @@ function afterHandRemoval(s: GameState, seat: Seat): { ok: boolean; error?: stri
     return { ok: true };
   }
   return { ok: false, error: 'Devi tenere almeno una carta da scartare' };
+}
+
+/** Passa il turno a `seat` (fase pesca). Se quel giocatore aveva il pozzetto "in
+ *  attesa" (svuotò la mano scartando), glielo distribuisce ORA, cioè all'inizio
+ *  del suo turno — dopo che l'avversario ha giocato (spec §9, variante). */
+function beginTurn(s: GameState, seat: Seat, now: number): void {
+  s.turn = seat;
+  s.phase = 'draw';
+  s.turnStart = now;
+  if (s.pozzoPending[seat]) {
+    s.hands[seat] = s.pozzo[seat];
+    s.pozzo[seat] = [];
+    s.pozzoPicked[seat] = true;
+    s.pozzoPending[seat] = false;
+  }
 }
 
 /** Vieta una calata che riduce la mano a UNA sola carta quando NON potresti poi
@@ -251,14 +268,11 @@ export function applyMove(
       if (s.hands[seat].length === 0) {
         if (!s.pozzoPicked[seat]) {
           // svuoti la mano scartando ma NON hai ancora preso il pozzetto (spec §9):
-          // lo scarto è valido, prendi il pozzetto e il turno passa all'avversario.
-          // NON è una chiusura.
-          s.hands[seat] = s.pozzo[seat];
-          s.pozzo[seat] = [];
-          s.pozzoPicked[seat] = true;
-          s.turn = opp;
-          s.phase = 'draw';
-          s.turnStart = now;
+          // lo scarto è valido e NON è una chiusura. Il pozzetto NON viene preso
+          // ora: resta "in attesa" e ti verrà distribuito all'inizio del tuo
+          // prossimo turno, cioè DOPO il turno dell'avversario.
+          s.pozzoPending[seat] = true;
+          beginTurn(s, opp, now);
           break;
         }
         // pozzetto già preso → scarto che svuota la mano = tentativo di chiusura
@@ -269,9 +283,7 @@ export function applyMove(
       }
 
       // turno all'avversario
-      s.turn = opp;
-      s.phase = 'draw';
-      s.turnStart = now;
+      beginTurn(s, opp, now);
       break;
     }
 

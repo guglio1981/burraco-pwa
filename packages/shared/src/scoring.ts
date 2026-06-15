@@ -66,9 +66,14 @@ export function playerRoundBreakdown(
   }
   const closed = closer === seat;
   const closeBonus = closed ? 100 : 0;
-  const handPen = handPenalty(state.hands[seat]);
-  // penalità pozzetto solo se NON l'ha preso e NON ha chiuso (chi chiude ha sempre preso il pozzetto)
-  const pozzoPenalty = !state.pozzoPicked[seat] && !closed ? 100 : 0;
+  // Pozzetto "in attesa" (svuotò scartando ma deve ancora riceverlo): conta come
+  // GIÀ preso → le sue 11 carte sono penalità in mano e niente penalità pozzetto.
+  // Così differire la distribuzione non altera il punteggio.
+  const pending = state.pozzoPending[seat];
+  const handCards = pending ? state.hands[seat].concat(state.pozzo[seat]) : state.hands[seat];
+  const handPen = handPenalty(handCards);
+  // penalità pozzetto solo se NON l'ha preso/guadagnato e NON ha chiuso (chi chiude ha sempre preso il pozzetto)
+  const pozzoPenalty = !state.pozzoPicked[seat] && !pending && !closed ? 100 : 0;
   const roundTotal = meldPoints + burracoBonusSum + closeBonus - handPen - pozzoPenalty;
   return {
     meldPoints,
