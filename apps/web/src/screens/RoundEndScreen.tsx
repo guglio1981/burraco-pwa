@@ -19,8 +19,8 @@ function ScoreLine({ label, value, sub, strong, neg }: { label: string; value: n
 
 function PlayerCard({ nick, you, won, b }: { nick: string; you: boolean; won: boolean; b: PlayerRoundBreakdown; }) {
   return (
-    <div style={{ background: won ? 'linear-gradient(160deg, oklch(0.31 0.04 168 / 0.9), oklch(0.24 0.03 168 / 0.9))' : 'oklch(0.24 0.024 168 / 0.8)',
-      border: '1px solid ' + (won ? 'oklch(0.81 0.125 86 / 0.55)' : 'var(--line)'), borderRadius: 20, padding: 16, boxShadow: 'var(--sh-1)' }}>
+    <div style={{ background: won ? 'linear-gradient(160deg, rgba(26, 55, 44, 0.9), rgba(16, 36, 28, 0.9))' : 'rgba(20, 35, 29, 0.8)',
+      border: '1px solid ' + (won ? 'rgba(229, 187, 89, 0.55)' : 'var(--line)'), borderRadius: 20, padding: 16, boxShadow: 'var(--sh-1)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 10 }}>
         <Avatar name={nick} you={you} size={42} ring={won} />
         <div style={{ flex: 1 }}>
@@ -83,16 +83,16 @@ export function RoundEndScreen() {
 
         {/* barra progresso */}
         {target > 0 && (
-          <div style={{ background: 'oklch(0.24 0.024 168 / 0.7)', border: '1px solid var(--line)', borderRadius: 16, padding: 14, marginBottom: 16 }}>
+          <div style={{ background: 'rgba(20, 35, 29, 0.7)', border: '1px solid var(--line)', borderRadius: 16, padding: 14, marginBottom: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--ink-mut)', marginBottom: 8, fontWeight: 600 }}>
               <span>Obiettivo {target}</span>
               <span className="tnum">manca {Math.max(0, target - myCum)} punti</span>
             </div>
-            <div style={{ height: 10, borderRadius: 99, background: 'oklch(0.30 0.02 168)', overflow: 'hidden', position: 'relative', marginBottom: 6 }}>
+            <div style={{ height: 10, borderRadius: 99, background: '#24312c', overflow: 'hidden', position: 'relative', marginBottom: 6 }}>
               <div style={{ position: 'absolute', inset: 0, width: Math.min(100, (myCum / target) * 100) + '%', background: 'linear-gradient(90deg, var(--gold-2), var(--gold))', borderRadius: 99 }} />
             </div>
-            <div style={{ height: 8, borderRadius: 99, background: 'oklch(0.30 0.02 168)', overflow: 'hidden', position: 'relative' }}>
-              <div style={{ position: 'absolute', inset: 0, width: Math.min(100, ((oppBreakdown?.cumulative ?? 0) / target) * 100) + '%', background: 'oklch(0.55 0.06 200)', borderRadius: 99 }} />
+            <div style={{ height: 8, borderRadius: 99, background: '#24312c', overflow: 'hidden', position: 'relative' }}>
+              <div style={{ position: 'absolute', inset: 0, width: Math.min(100, ((oppBreakdown?.cumulative ?? 0) / target) * 100) + '%', background: '#447c7f', borderRadius: 99 }} />
             </div>
           </div>
         )}

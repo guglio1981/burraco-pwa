@@ -72,20 +72,20 @@ export function CardBack({ w = 64, count, style = {} }: CardBackProps) {
   return (
     <div style={{
       width: w, height: h, borderRadius: Math.max(6, w * 0.13), flexShrink: 0, position: 'relative',
-      background: 'linear-gradient(150deg, oklch(0.34 0.05 168), oklch(0.24 0.045 168))',
+      background: 'linear-gradient(150deg, #1a4033, #03261b)',
       boxShadow: 'var(--sh-card)', overflow: 'hidden', ...style,
     }}>
       <div style={{ position: 'absolute', inset: w * 0.07, borderRadius: Math.max(4, w * 0.09),
-        border: '1px solid oklch(0.81 0.125 86 / 0.5)',
-        backgroundImage: 'repeating-linear-gradient(45deg, oklch(0.81 0.125 86 / 0.10) 0 2px, transparent 2px 7px), repeating-linear-gradient(-45deg, oklch(0.81 0.125 86 / 0.10) 0 2px, transparent 2px 7px)' }} />
+        border: '1px solid rgba(229, 187, 89, 0.5)',
+        backgroundImage: 'repeating-linear-gradient(45deg, rgba(229, 187, 89, 0.1) 0 2px, transparent 2px 7px), repeating-linear-gradient(-45deg, rgba(229, 187, 89, 0.1) 0 2px, transparent 2px 7px)' }} />
       <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ width: w * 0.42, height: w * 0.42, transform: 'rotate(45deg)',
-          background: 'oklch(0.81 0.125 86 / 0.16)', border: '1px solid oklch(0.81 0.125 86 / 0.6)',
+          background: 'rgba(229, 187, 89, 0.16)', border: '1px solid rgba(229, 187, 89, 0.6)',
           display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <span style={{ transform: 'rotate(-45deg)', fontSize: w * 0.26, color: 'var(--gold)', fontFamily: 'var(--font-disp)', fontWeight: 700 }}>B</span>
         </div>
       </div>
-      {count != null && <div style={{ position: 'absolute', bottom: -1, left: 0, right: 0, textAlign: 'center', fontSize: w * 0.2, fontWeight: 800, color: 'var(--gold)', background: 'oklch(0.19 0.034 168 / 0.7)', padding: '1px 0', fontVariantNumeric: 'tabular-nums' }}>{count}</div>}
+      {count != null && <div style={{ position: 'absolute', bottom: -1, left: 0, right: 0, textAlign: 'center', fontSize: w * 0.2, fontWeight: 800, color: 'var(--gold)', background: 'rgba(3, 25, 17, 0.7)', padding: '1px 0', fontVariantNumeric: 'tabular-nums' }}>{count}</div>}
     </div>
   );
 }

@@ -47,10 +47,10 @@ export function Avatar({ name = '?', size = 44, ring }: AvatarProps) {
       width: size, height: size, borderRadius: '50%', flexShrink: 0,
       background: 'linear-gradient(150deg, var(--gold), var(--gold-2))',
       display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
-      color: 'oklch(0.24 0.04 80)', fontWeight: 800,
+      color: '#291d07', fontWeight: 800,
       fontFamily: 'var(--font-disp)', fontSize: size * 0.66, lineHeight: 1,
       boxShadow: 'var(--sh-1)',
-      border: ring ? '2.5px solid var(--gold)' : '2px solid oklch(1 0 0 / 0.18)',
+      border: ring ? '2.5px solid var(--gold)' : '2px solid rgba(255, 255, 255, 0.18)',
       boxSizing: 'border-box',
     }}>
       {initial}
@@ -63,8 +63,8 @@ export function IconBtn({ name, onClick, size = 40, iconSize = 21, active }: Ico
   return (
     <button onClick={onClick} style={{
       width: size, height: size, borderRadius: 12, cursor: 'pointer',
-      background: active ? 'var(--gold-soft)' : 'oklch(0.40 0.02 168 / 0.4)',
-      border: '1px solid ' + (active ? 'oklch(0.81 0.125 86 / 0.5)' : 'var(--line)'),
+      background: active ? 'var(--gold-soft)' : 'rgba(62, 75, 70, 0.4)',
+      border: '1px solid ' + (active ? 'rgba(229, 187, 89, 0.5)' : 'var(--line)'),
       color: active ? 'var(--gold)' : 'var(--ink)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       backdropFilter: 'blur(8px)', flexShrink: 0,
@@ -81,7 +81,7 @@ export function TimerRing({ seconds, total = 60, size = 40 }: TimerRingProps) {
   return (
     <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
       <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="oklch(1 0 0 / 0.12)" strokeWidth="3" />
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255, 255, 255, 0.12)" strokeWidth="3" />
         <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={col} strokeWidth="3"
           strokeDasharray={C} strokeDashoffset={C * (1 - frac)} strokeLinecap="round"
           style={{ transition: 'stroke-dashoffset 1s linear' }} />
@@ -97,7 +97,7 @@ export function Toast({ text }: ToastProps) {
   if (!text) return null;
   return (
     <div style={{ position: 'fixed', bottom: 54, left: '50%', transform: 'translateX(-50%)', zIndex: 60,
-      background: 'oklch(0.20 0.02 168 / 0.96)', color: 'var(--ink)', padding: '11px 18px', borderRadius: 999,
+      background: 'rgba(13, 25, 20, 0.96)', color: 'var(--ink)', padding: '11px 18px', borderRadius: 999,
       border: '1px solid var(--line)', fontSize: 13.5, fontWeight: 600, boxShadow: 'var(--sh-2)',
       whiteSpace: 'nowrap', pointerEvents: 'none' }}>
       {text}
@@ -108,16 +108,17 @@ export function Toast({ text }: ToastProps) {
 type BurracoType = 'clean' | 'semi' | 'dirty';
 interface BurracoBadgeProps { type: BurracoType; small?: boolean; }
 export function BurracoBadge({ type, small }: BurracoBadgeProps) {
-  const map: Record<BurracoType, [string, string, string]> = {
-    clean: ['PULITO', 'var(--clean)', '◆'],
-    semi:  ['SEMI',   'var(--semi)',  '◈'],
-    dirty: ['SPORCO', 'var(--dirty)', '◇'],
+  // [label, colore testo, icona, sfondo (18%), bordo (45%)]
+  const map: Record<BurracoType, [string, string, string, string, string]> = {
+    clean: ['PULITO', 'var(--clean)', '◆', 'rgba(108, 231, 161, 0.18)', 'rgba(108, 231, 161, 0.45)'],
+    semi:  ['SEMI',   'var(--semi)',  '◈', 'rgba(230, 188, 91, 0.18)',  'rgba(230, 188, 91, 0.45)'],
+    dirty: ['SPORCO', 'var(--dirty)', '◇', 'rgba(161, 135, 103, 0.18)', 'rgba(161, 135, 103, 0.45)'],
   };
-  const [label, color, ic] = map[type];
+  const [label, color, ic, bg, border] = map[type];
   return (
     <span className="chip" style={{
-      background: `color-mix(in oklab, ${color} 18%, transparent)`,
-      color, border: `1px solid color-mix(in oklab, ${color} 45%, transparent)`,
+      background: bg,
+      color, border: `1px solid ${border}`,
       fontSize: small ? 9.5 : 11, padding: small ? '3px 7px' : '4px 9px', letterSpacing: '.08em',
     }}>
       <span>{ic}</span>{label}

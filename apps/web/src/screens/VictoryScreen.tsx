@@ -15,8 +15,8 @@ const MODES: Mode[] = ['fast', '1005', '2005'];
 function FinalRow({ name, score, you, win }: { name: string; score: number; you?: boolean; win?: boolean; }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 16,
-      background: win ? 'linear-gradient(120deg, var(--gold-soft), oklch(0.24 0.03 168 / 0.6))' : 'oklch(0.24 0.024 168 / 0.7)',
-      border: '1px solid ' + (win ? 'oklch(0.81 0.125 86 / 0.55)' : 'var(--line)') }}>
+      background: win ? 'linear-gradient(120deg, var(--gold-soft), rgba(16, 36, 28, 0.6))' : 'rgba(20, 35, 29, 0.7)',
+      border: '1px solid ' + (win ? 'rgba(229, 187, 89, 0.55)' : 'var(--line)') }}>
       <Avatar name={name} you={you} size={40} ring={win} />
       <div style={{ flex: 1 }}>
         <div style={{ fontWeight: 700, fontSize: 15, textTransform: 'uppercase' }}>{name}{you && ' (tu)'}</div>
@@ -35,8 +35,8 @@ function ModePicker({ value, onChange }: { value: Mode; onChange: (m: Mode) => v
         const on = value === m;
         return (
           <button key={m} onClick={() => onChange(m)} style={{ cursor: 'pointer', borderRadius: 12, padding: '9px 4px',
-            background: on ? 'var(--gold-soft)' : 'oklch(0.30 0.02 168 / 0.5)',
-            border: '1.5px solid ' + (on ? 'oklch(0.81 0.125 86 / 0.7)' : 'var(--line)'),
+            background: on ? 'var(--gold-soft)' : 'rgba(36, 49, 44, 0.5)',
+            border: '1.5px solid ' + (on ? 'rgba(229, 187, 89, 0.7)' : 'var(--line)'),
             color: on ? 'var(--gold)' : 'var(--ink-mut)', fontFamily: 'var(--font-disp)', fontWeight: 700, fontSize: 15 }}>
             {MODE_LABEL[m]}
           </button>
@@ -109,7 +109,7 @@ export function VictoryScreen() {
     <div className="b-screen dark-bg" style={{ overflow: 'hidden' }}>
       {/* alone oro */}
       <div style={{ position: 'absolute', top: -40, left: '50%', transform: 'translateX(-50%)', width: 460, height: 460,
-        background: 'radial-gradient(circle, oklch(0.81 0.125 86 / 0.22), transparent 62%)', pointerEvents: 'none' }} />
+        background: 'radial-gradient(circle, rgba(229, 187, 89, 0.22), transparent 62%)', pointerEvents: 'none' }} />
       {/* coriandoli statici */}
       {Array.from({ length: 22 }).map((_, i) => {
         const cols = ['var(--gold)', 'var(--clean)', 'var(--suit-red)', 'var(--ink)'];
@@ -119,8 +119,8 @@ export function VictoryScreen() {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 26px 36px', position: 'relative', overflowY: 'auto' }}>
         <div style={{ width: 96, height: 96, borderRadius: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'linear-gradient(160deg, var(--gold), var(--gold-deep))', boxShadow: '0 12px 40px oklch(0.81 0.125 86 / 0.4)', marginBottom: 20 }}>
-          <Icon name="trophy" size={50} color="oklch(0.24 0.04 80)" stroke={2.2} />
+          background: 'linear-gradient(160deg, var(--gold), var(--gold-deep))', boxShadow: '0 12px 40px rgba(229, 187, 89, 0.4)', marginBottom: 20 }}>
+          <Icon name="trophy" size={50} color="#291d07" stroke={2.2} />
         </div>
         <div className="t-label" style={{ color: 'var(--gold-2)' }}>Partita conclusa</div>
         <h1 className="t-brand" style={{ fontSize: 46, margin: '6px 0 4px', color: 'var(--ink)' }}>
@@ -152,7 +152,7 @@ export function VictoryScreen() {
             // l'avversario è uscito dalla stanza: niente rivincita possibile
             <>
               <div style={{ textAlign: 'center', padding: '12px', borderRadius: 14,
-                background: 'oklch(0.255 0.026 168 / 0.85)', border: '1px solid var(--line)', color: 'var(--ink-mut)', fontSize: 14 }}>
+                background: 'rgba(22, 39, 32, 0.85)', border: '1px solid var(--line)', color: 'var(--ink-mut)', fontSize: 14 }}>
                 <b style={{ color: 'var(--ink)' }}>{oppName}</b> ha lasciato la partita.
               </div>
               <button className="btn btn-gold" style={{ width: '100%' }} onClick={goHome}>Home</button>
@@ -162,14 +162,14 @@ export function VictoryScreen() {
             <>
               {store.rematchStatus === 'waiting' ? (
                 <div style={{ textAlign: 'center', padding: '14px 12px', borderRadius: 14,
-                  background: 'oklch(0.255 0.026 168 / 0.85)', border: '1px solid var(--line)', color: 'var(--ink-mut)', fontSize: 14 }}>
+                  background: 'rgba(22, 39, 32, 0.85)', border: '1px solid var(--line)', color: 'var(--ink-mut)', fontSize: 14 }}>
                   In attesa che <b style={{ color: 'var(--ink)' }}>{oppName}</b> accetti la rivincita…
                 </div>
               ) : (
                 <>
                   {store.rematchStatus === 'declined' && (
                     <div style={{ textAlign: 'center', padding: '10px 12px', borderRadius: 12,
-                      background: 'oklch(0.52 0.18 25 / 0.14)', border: '1px solid oklch(0.52 0.18 25 / 0.45)', color: 'oklch(0.78 0.14 25)', fontSize: 13.5 }}>
+                      background: 'rgba(186, 43, 46, 0.14)', border: '1px solid rgba(186, 43, 46, 0.45)', color: '#ff9189', fontSize: 13.5 }}>
                       {oppName} ha rifiutato. Riprova con un altro tipo di partita.
                     </div>
                   )}
@@ -199,10 +199,10 @@ export function VictoryScreen() {
 
       {/* Popup proposta di rivincita (lato GUEST) */}
       {!gameClient.isLocal && !isHost && store.rematchIncoming && (
-        <div style={{ position: 'absolute', inset: 0, background: 'oklch(0.12 0.02 168 / 0.7)', backdropFilter: 'blur(3px)',
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(1, 8, 5, 0.7)', backdropFilter: 'blur(3px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, zIndex: 100 }}>
-          <div style={{ width: '100%', maxWidth: 320, background: 'linear-gradient(160deg, oklch(0.31 0.04 168 / 0.97), oklch(0.22 0.03 168 / 0.97))',
-            border: '1.5px solid oklch(0.81 0.125 86 / 0.5)', borderRadius: 22, padding: 22, boxShadow: 'var(--sh-1)', textAlign: 'center' }}>
+          <div style={{ width: '100%', maxWidth: 320, background: 'linear-gradient(160deg, rgba(26, 55, 44, 0.97), rgba(11, 31, 24, 0.97))',
+            border: '1.5px solid rgba(229, 187, 89, 0.5)', borderRadius: 22, padding: 22, boxShadow: 'var(--sh-1)', textAlign: 'center' }}>
             <div style={{ fontFamily: 'var(--font-disp)', fontWeight: 800, fontSize: 20, color: 'var(--ink)', marginBottom: 6 }}>Rivincita?</div>
             <div style={{ fontSize: 14, color: 'var(--ink-mut)', marginBottom: 18 }}>
               <b style={{ color: 'var(--ink)' }}>{oppName}</b> propone una nuova partita: <b style={{ color: 'var(--gold)' }}>{MODE_LABEL[store.rematchIncoming]}</b>

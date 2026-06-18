@@ -65,7 +65,7 @@ function CardRows({ cards, selectedIds, drawnId, onCardClick }: {
 }
 
 const boxStyle: React.CSSProperties = {
-  background: 'oklch(0.20 0.022 168 / 0.98)', border: '1px solid var(--line)', borderRadius: 16,
+  background: 'rgba(12, 25, 20, 0.98)', border: '1px solid var(--line)', borderRadius: 16,
   boxShadow: 'var(--sh-2)',
   userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' as React.CSSProperties['WebkitTouchCallout'],
 };

@@ -10,7 +10,7 @@ function BrandLogo() {
     <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
       <div style={{ width: 84, height: 84, borderRadius: 24, position: 'relative',
         background: 'linear-gradient(155deg, var(--felt-1), var(--felt-deep))',
-        border: '2px solid oklch(0.81 0.125 86 / 0.55)', boxShadow: 'var(--sh-2)',
+        border: '2px solid rgba(229, 187, 89, 0.55)', boxShadow: 'var(--sh-2)',
         display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <span style={{ fontFamily: 'var(--font-disp)', fontWeight: 800, fontSize: 50, color: 'var(--gold)' }}>B</span>
         <span style={{ position: 'absolute', top: 11, right: 14, fontSize: 16, color: 'var(--suit-red)' }}>♥</span>
@@ -30,7 +30,7 @@ function Field({ label, placeholder, type = 'text', value, onChange }: {
       <input type={type} placeholder={placeholder} value={value}
         onChange={(e) => onChange(e.target.value)}
         style={{ width: '100%', padding: '14px 15px', borderRadius: 13,
-          background: 'oklch(0.30 0.02 168 / 0.6)', border: '1.5px solid var(--line)',
+          background: 'rgba(36, 49, 44, 0.6)', border: '1.5px solid var(--line)',
           color: 'var(--ink)', fontFamily: 'var(--font-ui)', fontSize: 15.5, outline: 'none' }} />
     </label>
   );
@@ -112,11 +112,11 @@ export function LoginScreen() {
           {reg ? 'Scegli nome utente e password e gioca con i tuoi amici.' : 'Accedi con nome utente e password.'}
         </p>
 
-        <div style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 13, background: 'oklch(0.30 0.02 168 / 0.5)', border: '1px solid var(--line)', marginBottom: 18 }}>
+        <div style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 13, background: 'rgba(36, 49, 44, 0.5)', border: '1px solid var(--line)', marginBottom: 18 }}>
           {(['login', 'register'] as const).map((k) => (
             <button key={k} onClick={() => setTab(k)} style={{ flex: 1, padding: '10px 0', borderRadius: 9, cursor: 'pointer', border: 'none', fontFamily: 'var(--font-ui)', fontWeight: 700, fontSize: 14,
               background: tab === k ? 'linear-gradient(168deg, var(--gold), var(--gold-2))' : 'transparent',
-              color: tab === k ? 'oklch(0.24 0.04 80)' : 'var(--ink-mut)', transition: 'all .15s' }}>
+              color: tab === k ? '#291d07' : 'var(--ink-mut)', transition: 'all .15s' }}>
               {k === 'login' ? 'Accedi' : 'Registrati'}
             </button>
           ))}

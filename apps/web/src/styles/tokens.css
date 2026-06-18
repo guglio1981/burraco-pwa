@@ -7,37 +7,37 @@
 
 :root {
   /* — feltro / superfici — */
-  --felt-1:    oklch(0.34 0.050 168);
-  --felt-0:    oklch(0.26 0.042 168);
-  --felt-deep: oklch(0.19 0.034 168);
-  --surface:   oklch(0.255 0.026 168);
-  --surface-2: oklch(0.305 0.030 168);
-  --line:      oklch(0.46 0.022 168 / 0.45);
-  --line-soft: oklch(0.60 0.020 168 / 0.16);
+  --felt-1:    #1a4033;
+  --felt-0:    #0b2a20;
+  --felt-deep: #031911;
+  --surface:   #162720;
+  --surface-2: #20342c;
+  --line:      rgba(77, 92, 86, 0.45);
+  --line-soft: rgba(117, 132, 126, 0.16);
 
   /* — testo — */
-  --ink:       oklch(0.960 0.012 95);
-  --ink-mut:   oklch(0.760 0.016 120);
-  --ink-dim:   oklch(0.600 0.016 140);
+  --ink:       #f4f2e9;
+  --ink-mut:   #afb3a8;
+  --ink-dim:   #7b837a;
 
   /* — oro / ottone — */
-  --gold:      oklch(0.815 0.125 86);
-  --gold-2:    oklch(0.720 0.120 80);
-  --gold-deep: oklch(0.560 0.095 74);
-  --gold-soft: oklch(0.815 0.125 86 / 0.14);
+  --gold:      #e6bc5b;
+  --gold-2:    #cc9c42;
+  --gold-deep: #956b2d;
+  --gold-soft: rgba(230, 188, 91, 0.14);
 
   /* — stati burraco — */
-  --clean:  oklch(0.840 0.150 156);
-  --semi:   oklch(0.815 0.125 86);
-  --dirty:  oklch(0.640 0.055 72);
-  --danger: oklch(0.640 0.180 25);
+  --clean:  #6ce7a1;
+  --semi:   #e6bc5b;
+  --dirty:  #a18767;
+  --danger: #e55551;
 
   /* — carta da gioco — */
-  --card-face: oklch(0.975 0.008 95);
-  --card-edge: oklch(0.890 0.012 95);
-  --suit-red:  oklch(0.560 0.205 26);
-  --suit-blk:  oklch(0.270 0.012 270);
-  --joker:     oklch(0.700 0.150 300);
+  --card-face: #f8f7f1;
+  --card-edge: #dddbd2;
+  --suit-red:  #d2272b;
+  --suit-blk:  #24262c;
+  --joker:     #ad87ed;
 
   /* — raggi / ombre — */
   --r-sm: 10px; --r-md: 16px; --r-lg: 22px; --r-xl: 30px;
@@ -68,7 +68,7 @@
   opacity: .035; mix-blend-mode: overlay;
 }
 .dark-bg {
-  background: radial-gradient(130% 90% at 50% 0%, var(--felt-0) 0%, var(--felt-deep) 70%, oklch(0.15 0.03 168) 100%);
+  background: radial-gradient(130% 90% at 50% 0%, var(--felt-0) 0%, var(--felt-deep) 70%, #000f09 100%);
 }
 
 /* — tipografia — */
@@ -89,13 +89,13 @@
 }
 .btn:active { transform: translateY(1px) scale(0.99); }
 .btn-gold {
-  color: oklch(0.24 0.04 80);
+  color: #291d07;
   background: linear-gradient(168deg, var(--gold) 0%, var(--gold-2) 100%);
-  box-shadow: 0 1px 0 oklch(0.92 0.08 90) inset, var(--sh-1);
+  box-shadow: 0 1px 0 #f9e3a7 inset, var(--sh-1);
 }
 .btn-gold:hover { filter: brightness(1.05); }
 .btn-ghost {
-  color: var(--ink); background: oklch(0.40 0.02 168 / 0.4);
+  color: var(--ink); background: rgba(62, 75, 70, 0.4);
   border: 1px solid var(--line); backdrop-filter: blur(8px);
 }
 .btn-dark { color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); }

@@ -24,8 +24,8 @@ function DiffSeg({ value, onChange }: { value: Difficulty; onChange: (d: Difficu
         const on = value === d;
         return (
           <button key={d} onClick={() => onChange(d)} style={{ cursor: 'pointer', borderRadius: 13, padding: '11px 6px',
-            background: on ? 'var(--gold-soft)' : 'oklch(0.30 0.02 168 / 0.5)',
-            border: '1.5px solid ' + (on ? 'oklch(0.81 0.125 86 / 0.7)' : 'var(--line)'),
+            background: on ? 'var(--gold-soft)' : 'rgba(36, 49, 44, 0.5)',
+            border: '1.5px solid ' + (on ? 'rgba(229, 187, 89, 0.7)' : 'var(--line)'),
             color: on ? 'var(--gold)' : 'var(--ink-mut)', fontFamily: 'var(--font-ui)', textAlign: 'center', transition: 'all .15s' }}>
             <div style={{ fontFamily: 'var(--font-disp)', fontWeight: 700, fontSize: 16 }}>{DIFF_LABEL[d]}</div>
           </button>
@@ -68,8 +68,8 @@ function ModeSeg({ value, onChange }: { value: string; onChange: (m: string) => 
         const on = value === m;
         return (
           <button key={m} onClick={() => onChange(m)} style={{ cursor: 'pointer', borderRadius: 13, padding: '12px 6px',
-            background: on ? 'var(--gold-soft)' : 'oklch(0.30 0.02 168 / 0.5)',
-            border: '1.5px solid ' + (on ? 'oklch(0.81 0.125 86 / 0.7)' : 'var(--line)'),
+            background: on ? 'var(--gold-soft)' : 'rgba(36, 49, 44, 0.5)',
+            border: '1.5px solid ' + (on ? 'rgba(229, 187, 89, 0.7)' : 'var(--line)'),
             color: on ? 'var(--gold)' : 'var(--ink-mut)', fontFamily: 'var(--font-ui)', textAlign: 'center', transition: 'all .15s' }}>
             <div style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', opacity: .8 }}>
               {m === 'fast' ? 'Rapida' : 'A punti'}
@@ -180,7 +180,7 @@ export function HomeScreen() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ width: 52, height: 52, borderRadius: 15, position: 'relative',
               background: 'linear-gradient(155deg, var(--felt-1), var(--felt-deep))',
-              border: '1.5px solid oklch(0.81 0.125 86 / 0.55)', boxShadow: 'var(--sh-1)',
+              border: '1.5px solid rgba(229, 187, 89, 0.55)', boxShadow: 'var(--sh-1)',
               display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <span style={{ fontFamily: 'var(--font-disp)', fontWeight: 800, fontSize: 30, color: 'var(--gold)', lineHeight: 1 }}>B</span>
               <span style={{ position: 'absolute', top: 6, right: 8, fontSize: 11, color: 'var(--suit-red)' }}>♥</span>
@@ -202,14 +202,14 @@ export function HomeScreen() {
           ] as const).map(({ key, icon, title, sub }) => {
             const isOpen = open === key;
             return (
-              <div key={key} style={{ background: 'oklch(0.255 0.026 168 / 0.85)', borderRadius: 22, overflow: 'hidden',
-                border: '1.5px solid ' + (isOpen ? 'oklch(0.81 0.125 86 / 0.5)' : 'var(--line)'),
+              <div key={key} style={{ background: 'rgba(22, 39, 32, 0.85)', borderRadius: 22, overflow: 'hidden',
+                border: '1.5px solid ' + (isOpen ? 'rgba(229, 187, 89, 0.5)' : 'var(--line)'),
                 boxShadow: 'var(--sh-1)', backdropFilter: 'blur(6px)', transition: 'border-color .2s' }}>
                 <button onClick={() => setOpen(isOpen ? null : key)} aria-expanded={isOpen}
                   style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 14, padding: '15px 16px',
                     background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
                   <div style={{ width: 44, height: 44, borderRadius: 13, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: 'var(--gold-soft)', border: '1.5px solid oklch(0.81 0.125 86 / 0.4)', color: 'var(--gold)' }}>
+                    background: 'var(--gold-soft)', border: '1.5px solid rgba(229, 187, 89, 0.4)', color: 'var(--gold)' }}>
                     <Icon name={icon} size={22} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -235,7 +235,7 @@ export function HomeScreen() {
                         <div style={{ display: 'flex', gap: 7 }}>
                           {[0, 1, 2, 3].map((i) => (
                             <div key={i} style={{ flex: 1, aspectRatio: '1', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              background: 'oklch(0.30 0.02 168 / 0.6)', border: '1.5px solid ' + (code[i] ? 'oklch(0.81 0.125 86 / 0.6)' : 'var(--line)'),
+                              background: 'rgba(36, 49, 44, 0.6)', border: '1.5px solid ' + (code[i] ? 'rgba(229, 187, 89, 0.6)' : 'var(--line)'),
                               fontFamily: 'var(--font-disp)', fontWeight: 700, fontSize: 24, color: 'var(--gold)' }}>
                               {code[i] ?? ''}
                             </div>
@@ -279,12 +279,12 @@ export function HomeScreen() {
 
         {/* riprendi partita salvata (vs computer) — in fondo */}
         {saved && (
-          <div style={{ background: 'linear-gradient(160deg, oklch(0.31 0.04 168 / 0.92), oklch(0.24 0.03 168 / 0.92))',
-            border: '1.5px solid oklch(0.81 0.125 86 / 0.5)', borderRadius: 22, padding: 16, marginTop: 18, boxShadow: 'var(--sh-1)' }}>
+          <div style={{ background: 'linear-gradient(160deg, rgba(26, 55, 44, 0.92), rgba(16, 36, 28, 0.92))',
+            border: '1.5px solid rgba(229, 187, 89, 0.5)', borderRadius: 22, padding: 16, marginTop: 18, boxShadow: 'var(--sh-1)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
               <div className="t-label" style={{ color: 'var(--gold-2)' }}>Riprendi partita</div>
               <button onClick={deleteSave} aria-label="Elimina partita salvata"
-                style={{ background: 'oklch(0.52 0.18 25 / 0.18)', border: '1px solid oklch(0.52 0.18 25 / 0.5)', borderRadius: 10, padding: '6px 8px', cursor: 'pointer', color: 'oklch(0.7 0.16 25)' }}>
+                style={{ background: 'rgba(186, 43, 46, 0.18)', border: '1px solid rgba(186, 43, 46, 0.5)', borderRadius: 10, padding: '6px 8px', cursor: 'pointer', color: '#f2716a' }}>
                 <Icon name="trash" size={16} />
               </button>
             </div>

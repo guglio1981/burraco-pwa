@@ -18,7 +18,7 @@ function ShareBtn({ icon, iconEl, label, onClick }: { icon?: Parameters<typeof I
   return (
     <button onClick={onClick} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0', minHeight: 44 }}>
       <div style={{ width: 50, height: 50, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'oklch(0.40 0.02 168 / 0.5)', border: '1px solid var(--line)', color: 'var(--ink)' }}>
+        background: 'rgba(62, 75, 70, 0.5)', border: '1px solid var(--line)', color: 'var(--ink)' }}>
         {iconEl ?? (icon ? <Icon name={icon} size={22} /> : null)}
       </div>
       <span style={{ fontSize: 11, color: 'var(--ink-mut)', fontWeight: 600 }}>{label}</span>
@@ -82,7 +82,7 @@ export function WaitingScreen() {
       {/* header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '58px 18px 6px' }}>
         <IconBtn name="back" onClick={cancel} />
-        <span className="chip" style={{ background: 'var(--gold-soft)', color: 'var(--gold)', border: '1px solid oklch(0.81 0.125 86 / 0.4)' }}>
+        <span className="chip" style={{ background: 'var(--gold-soft)', color: 'var(--gold)', border: '1px solid rgba(229, 187, 89, 0.4)' }}>
           <Icon name={mode === 'fast' ? 'bolt' : 'trophy'} size={13} /> {MODE_LABEL[mode]}
         </span>
         <div style={{ width: 40 }} />
@@ -95,7 +95,7 @@ export function WaitingScreen() {
           <div style={{ display: 'flex', justifyContent: 'center', gap: 9, marginTop: 12 }}>
             {code.split('').map((c, i) => (
               <div key={i} style={{ width: 56, height: 70, borderRadius: 15, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'linear-gradient(160deg, var(--surface-2), var(--surface))', border: '1.5px solid oklch(0.81 0.125 86 / 0.45)',
+                background: 'linear-gradient(160deg, var(--surface-2), var(--surface))', border: '1.5px solid rgba(229, 187, 89, 0.45)',
                 fontFamily: 'var(--font-disp)', fontWeight: 800, fontSize: 38, color: 'var(--gold)', boxShadow: 'var(--sh-1)' }}>{c}</div>
             ))}
           </div>
@@ -107,11 +107,11 @@ export function WaitingScreen() {
           <ShareBtn iconEl={<WhatsAppIcon />} label="WhatsApp" onClick={whatsApp} />
           <ShareBtn icon="link" label="Copia link" onClick={copyLink} />
           <ShareBtn icon="copy" label="Copia codice" onClick={copyCode} />
-          <ShareBtn icon="users" label="Invita amici" tint="var(--gold-soft)" onClick={() => setShowInvite(true)} />
+          <ShareBtn icon="users" label="Invita amici" onClick={() => setShowInvite(true)} />
         </div>
 
         {/* giocatori */}
-        <div style={{ marginTop: 26, background: 'oklch(0.255 0.026 168 / 0.7)', border: '1px solid var(--line)', borderRadius: 20, padding: 18 }}>
+        <div style={{ marginTop: 26, background: 'rgba(22, 39, 32, 0.7)', border: '1px solid var(--line)', borderRadius: 20, padding: 18 }}>
           <div className="t-label" style={{ marginBottom: 14 }}>Giocatori</div>
           {/* host */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
@@ -204,7 +204,7 @@ function InviteSheet({ roomCode, myId, onClose, onInvited }: InviteSheetProps) {
 
   return (
     <div onClick={onClose} style={{ position: 'absolute', inset: 0, zIndex: 40,
-      background: 'oklch(0.1 0.02 168 / 0.55)', backdropFilter: 'blur(3px)',
+      background: 'rgba(0, 5, 3, 0.55)', backdropFilter: 'blur(3px)',
       display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
       <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--surface)',
         borderTopLeftRadius: 28, borderTopRightRadius: 28, borderTop: '1px solid var(--line)',

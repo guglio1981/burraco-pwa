@@ -9,10 +9,10 @@ import { Avatar } from './Icon.js';
 const overlayStyle: React.CSSProperties = {
   position: 'fixed', inset: 0, zIndex: 100, display: 'flex',
   alignItems: 'center', justifyContent: 'center', padding: 24,
-  background: 'oklch(0.12 0.02 168 / 0.72)', backdropFilter: 'blur(4px)',
+  background: 'rgba(1, 8, 5, 0.72)', backdropFilter: 'blur(4px)',
 };
 const cardStyle: React.CSSProperties = {
-  width: '100%', maxWidth: 340, background: 'oklch(0.22 0.024 168 / 0.98)',
+  width: '100%', maxWidth: 340, background: 'rgba(15, 30, 24, 0.98)',
   border: '1px solid var(--line)', borderRadius: 22, padding: 22,
   boxShadow: 'var(--sh-2)',
 };
@@ -21,7 +21,7 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
   return (
     <button onClick={() => onChange(!on)} style={{
       width: 48, height: 28, borderRadius: 999, border: 'none', cursor: 'pointer', flexShrink: 0,
-      background: on ? 'linear-gradient(168deg, var(--gold), var(--gold-2))' : 'oklch(0.34 0.02 168 / 0.8)',
+      background: on ? 'linear-gradient(168deg, var(--gold), var(--gold-2))' : 'rgba(46, 59, 54, 0.8)',
       position: 'relative', transition: 'background .15s',
     }}>
       <span style={{ position: 'absolute', top: 3, left: on ? 23 : 3, width: 22, height: 22, borderRadius: '50%',
@@ -59,7 +59,7 @@ export function SettingsSheet({ onClose, onAbandon }: { onClose: () => void; onA
         <div style={{ height: 1, background: 'var(--line-soft)', margin: '6px 0 16px' }} />
 
         {!confirming ? (
-          <button className="btn" style={{ width: '100%', background: 'oklch(0.32 0.09 25 / 0.5)', border: '1px solid oklch(0.6 0.16 25 / 0.5)', color: 'oklch(0.85 0.10 25)' }}
+          <button className="btn" style={{ width: '100%', background: 'rgba(88, 27, 26, 0.5)', border: '1px solid rgba(206, 81, 77, 0.5)', color: '#ffb4ad' }}
             onClick={() => setConfirming(true)}>
             Abbandona partita
           </button>
@@ -70,7 +70,7 @@ export function SettingsSheet({ onClose, onAbandon }: { onClose: () => void; onA
             </p>
             <div style={{ display: 'flex', gap: 8 }}>
               <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setConfirming(false)}>Annulla</button>
-              <button className="btn" style={{ flex: 1, background: 'oklch(0.52 0.18 25)', color: '#fff', border: 'none' }} onClick={onAbandon}>
+              <button className="btn" style={{ flex: 1, background: '#ba2b2e', color: '#fff', border: 'none' }} onClick={onAbandon}>
                 Abbandona
               </button>
             </div>
@@ -126,7 +126,7 @@ export function ProfilePopup({ nick, username, isGuest, onLogout, onClose }: {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: 13.5, fontWeight: 700, color: notifColor }}>{notifLabel}</span>
             {supported && perm === 'default' && (
-              <button className="btn" style={{ padding: '6px 12px', fontSize: 12.5, background: 'var(--gold-soft)', color: 'var(--gold)', border: '1px solid oklch(0.81 0.125 86 / 0.4)' }}
+              <button className="btn" style={{ padding: '6px 12px', fontSize: 12.5, background: 'var(--gold-soft)', color: 'var(--gold)', border: '1px solid rgba(229, 187, 89, 0.4)' }}
                 onClick={activate} disabled={busy}>
                 {busy ? '…' : 'Attiva'}
               </button>
@@ -140,7 +140,7 @@ export function ProfilePopup({ nick, username, isGuest, onLogout, onClose }: {
 
         <div style={{ height: 1, background: 'var(--line-soft)', margin: '8px 0 16px' }} />
 
-        <button className="btn" style={{ width: '100%', background: 'oklch(0.32 0.09 25 / 0.5)', border: '1px solid oklch(0.6 0.16 25 / 0.5)', color: 'oklch(0.85 0.10 25)' }}
+        <button className="btn" style={{ width: '100%', background: 'rgba(88, 27, 26, 0.5)', border: '1px solid rgba(206, 81, 77, 0.5)', color: '#ffb4ad' }}
           onClick={onLogout}>
           Esci
         </button>
