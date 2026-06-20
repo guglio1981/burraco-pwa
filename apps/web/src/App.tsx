@@ -52,6 +52,11 @@ export function App() {
         },
         onError: (e) => store.showToast(e),
         onAbandoned: () => store.notifyOpponentLeft(),
+        // rivincita: vanno registrati QUI perché il guest che entra da deep-link
+        // (?join=) o riprende una partita attiva non passa da HomeScreen
+        onRematchOffer: (m) => store.setRematchIncoming(m),
+        onRematchDecline: () => store.setRematchStatus('declined'),
+        onOpponentLeftRoom: () => { store.setRematchIncoming(null); store.setRematchStatus('left'); },
       });
 
       const pending = getPendingJoin();
