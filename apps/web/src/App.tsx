@@ -65,12 +65,14 @@ export function App() {
         clearPendingJoin();
         api.joinRoom(pending).then(({ room }) => {
           store.setRoom(room);
+          store.setVsComputer(false); // partita ONLINE
           setActiveRoom(room.id);
           wsClient.subscribe(room.id);
           store.setScreen('waiting');
         }).catch(() => { clearActiveRoom(); store.setScreen('home'); });
       } else if (active) {
         // tentativo di ripresa: home come fallback se la partita non esiste più
+        store.setVsComputer(false); // partita ONLINE
         store.setScreen('home');
         wsClient.subscribe(active);
       } else {
@@ -98,6 +100,7 @@ export function App() {
         if (code && store.user && getToken()) {
           api.joinRoom(code).then(({ room }) => {
             store.setRoom(room);
+            store.setVsComputer(false); // partita ONLINE
             wsClient.subscribe(room.id);
             store.setScreen('waiting');
           }).catch(() => {});

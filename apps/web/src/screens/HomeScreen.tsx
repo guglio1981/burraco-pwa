@@ -114,6 +114,7 @@ export function HomeScreen() {
     try {
       const { room } = await api.createRoom(mode);
       store.setRoom(room);
+      store.setVsComputer(false); // partita ONLINE: non è vs computer
       setActiveRoom(room.id);
       const token = getToken()!;
       wsClient.connect(token, {
@@ -140,6 +141,7 @@ export function HomeScreen() {
     try {
       const { room } = await api.joinRoom(code);
       store.setRoom(room);
+      store.setVsComputer(false); // partita ONLINE: non è vs computer
       setActiveRoom(room.id);
       const token = getToken()!;
       wsClient.connect(token, {
