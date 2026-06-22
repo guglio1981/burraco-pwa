@@ -6,6 +6,14 @@ declare const self: ServiceWorkerGlobalScope;
 // vite-plugin-pwa injects the asset manifest here at build time
 precacheAndRoute(self.__WB_MANIFEST);
 
+// ── Aggiornamento immediato ─────────────────────────────────
+// Con strategia injectManifest, registerType:'autoUpdate' NON basta: senza
+// questi due il nuovo SW resta "waiting" e l'utente continua col build vecchio
+// finché non chiude tutte le schede. Così invece il nuovo SW prende subito il
+// controllo e (con autoUpdate) la pagina si ricarica da sola sull'ultima versione.
+self.addEventListener('install', () => { void self.skipWaiting(); });
+self.addEventListener('activate', (event) => { event.waitUntil(self.clients.claim()); });
+
 // ── Push notifications ──────────────────────────────────────
 
 interface PushPayload {
