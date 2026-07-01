@@ -50,6 +50,12 @@ async function persist(
   );
   if (ns.phase === 'finished') {
     await client.query("UPDATE rooms SET status = 'finished' WHERE id = $1", [roomId]);
+  } else {
+    // ritenzione scorrevole: la partita resta ripristinabile per 14 giorni dall'ultima mossa
+    await client.query(
+      "UPDATE rooms SET status = 'playing', expires_at = now() + interval '14 days' WHERE id = $1",
+      [roomId],
+    );
   }
 }
 
@@ -131,11 +137,33 @@ export async function rematchTx(roomId: string, mode: Mode, opts: { now?: number
       "UPDATE games SET state = $1::jsonb, rev = $2, status = 'playing', updated_at = now() WHERE room_id = $3",
       [JSON.stringify(ns), ns.rev, roomId],
     );
-    const expires = new Date(now + 30 * 60 * 1000).toISOString();
+    const expires = new Date(now + 14 * 24 * 60 * 60 * 1000).toISOString();
     await client.query(
       "UPDATE rooms SET game_mode = $1, status = 'playing', expires_at = $2 WHERE id = $3",
       [mode, expires, roomId],
     );
+    return { status: 'ok', state: ns, rev: ns.rev };
+  });
+}
+
+/** Ripresa asincrona: se è il turno di qualcuno, azzera l'orologio del turno
+ *  (turnStart = adesso) SENZA cambiare rev — così chi rientra dopo ore/giorni
+ *  non subisce il timeout maturato mentre non c'era. Ritorna lo stato aggiornato. */
+export async function resumeTurnTx(roomId: string, opts: { now?: number } = {}): Promise<MoveOutcome> {
+  const now = opts.now ?? Date.now();
+  return tx(async (client) => {
+    const sel = await client.query<{ state: GameState; rev: number }>(
+      'SELECT state, rev FROM games WHERE room_id = $1 FOR UPDATE',
+      [roomId],
+    );
+    const row = sel.rows[0];
+    if (!row) return { status: 'error', error: 'Partita non trovata' };
+    if (row.state.phase !== 'draw' && row.state.phase !== 'play') {
+      return { status: 'ok', state: row.state, rev: row.rev }; // niente turno da azzerare
+    }
+    const ns: GameState = { ...row.state, turnStart: now };
+    // NON tocco rev né updated_at: non è una mossa, solo il reset dell'orologio
+    await client.query('UPDATE games SET state = $1::jsonb WHERE room_id = $2', [JSON.stringify(ns), roomId]);
     return { status: 'ok', state: ns, rev: ns.rev };
   });
 }
@@ -161,16 +189,17 @@ export async function abandonTx(roomId: string, seat: Seat): Promise<MoveOutcome
   });
 }
 
-/** Pulizia periodica: elimina partite/stanze inattive da oltre 30 minuti (recupero scaduto). */
+/** Pulizia periodica (best-effort):
+ *  - partite scadute (nessuna mossa da 14 giorni → expires_at superato);
+ *  - lobby mai avviate più vecchie di 30 minuti (codice scaduto). */
 export async function cleanupStale(): Promise<void> {
   try {
-    // 1) partite senza mosse da >30 min (i game referenziano le room → si cancellano per primi)
-    await query(`DELETE FROM games WHERE updated_at < now() - interval '30 minutes'`);
-    // 2) stanze ora orfane (o lobby mai avviate) più vecchie di 30 min
+    // 1) game di stanze scadute (i game referenziano le room → prima i game)
     await query(
-      `DELETE FROM rooms WHERE created_at < now() - interval '30 minutes'
-         AND id NOT IN (SELECT room_id FROM games)`,
+      `DELETE FROM games WHERE room_id IN (SELECT id FROM rooms WHERE expires_at < now())`,
     );
+    // 2) stanze scadute (partite oltre i 14 giorni o lobby col codice scaduto)
+    await query(`DELETE FROM rooms WHERE expires_at < now()`);
   } catch { /* la pulizia è best-effort */ }
 }
 

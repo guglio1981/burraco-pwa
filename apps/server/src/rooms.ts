@@ -1,13 +1,16 @@
 /* ============================================================
    Stanze (matchmaking pre-partita). Codice 4 lettere (no I/O).
    ============================================================ */
-import type { Mode } from '@burraco/shared';
+import type { Mode, GameState } from '@burraco/shared';
 import { query } from './db.js';
 import { AppError } from './errors.js';
 import { getUser, type PublicUser } from './auth.js';
 
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // niente I, O
-const ROOM_TTL_MS = 30 * 60 * 1000;
+// Finestra per unirsi con il codice quando la stanza è ancora in lobby.
+const JOIN_TTL_MS = 30 * 60 * 1000;
+// Ritenzione delle partite avviate: 14 giorni dall'ultima mossa (ripresa asincrona).
+export const GAME_TTL_MS = 14 * 24 * 60 * 60 * 1000;
 
 export interface RoomRow {
   id: string;
@@ -16,6 +19,7 @@ export interface RoomRow {
   guest_id: string | null;
   status: 'waiting' | 'playing' | 'finished';
   game_mode: Mode;
+  title: string | null;
   expires_at: string;
   created_at: string;
 }
@@ -25,6 +29,7 @@ export interface RoomView {
   code: string;
   status: RoomRow['status'];
   gameMode: Mode;
+  title: string | null;
   host: PublicUser | null;
   guest: PublicUser | null;
   expiresAt: string;
@@ -48,6 +53,7 @@ export async function roomView(room: RoomRow): Promise<RoomView> {
     code: room.code,
     status: room.status,
     gameMode: room.game_mode,
+    title: room.title,
     host: pub(host),
     guest: pub(guest),
     expiresAt: room.expires_at,
@@ -56,7 +62,7 @@ export async function roomView(room: RoomRow): Promise<RoomView> {
 
 export async function createRoom(hostId: string, mode: Mode): Promise<RoomRow> {
   if (!VALID_MODES.includes(mode)) throw new AppError(400, 'Modalità non valida');
-  const expires = new Date(Date.now() + ROOM_TTL_MS).toISOString();
+  const expires = new Date(Date.now() + JOIN_TTL_MS).toISOString();
   // ritenta in caso di collisione del codice (UNIQUE)
   for (let attempt = 0; attempt < 8; attempt++) {
     const code = randomCode();
@@ -105,4 +111,44 @@ export function seatOf(room: RoomRow, userId: string): 'host' | 'guest' | null {
   if (room.host_id === userId) return 'host';
   if (room.guest_id === userId) return 'guest';
   return null;
+}
+
+/** Riga usata dall'elenco "Le mie partite" (stanza + stato del gioco). */
+export interface MyGameRow extends RoomRow {
+  state: GameState | null;
+  updated_at: string | null;
+}
+
+/** Partite in corso dell'utente (già avviate, non concluse, non scadute),
+ *  ordinate dall'ultima mossa. Include lo stato per capire di chi è il turno. */
+export async function listRoomsForUser(userId: string): Promise<MyGameRow[]> {
+  const r = await query<MyGameRow>(
+    `SELECT r.*, g.state, g.updated_at
+       FROM rooms r
+       JOIN games g ON g.room_id = r.id
+      WHERE (r.host_id = $1 OR r.guest_id = $1)
+        AND r.status <> 'finished'
+        AND r.expires_at > now()
+      ORDER BY g.updated_at DESC`,
+    [userId],
+  );
+  return r.rows;
+}
+
+/** Rinomina la partita (consentito a entrambi i giocatori). Titolo vuoto → rimosso. */
+export async function setRoomTitle(roomId: string, userId: string, title: string): Promise<void> {
+  const clean = title.trim().slice(0, 60);
+  const r = await query(
+    `UPDATE rooms SET title = $1 WHERE id = $2 AND (host_id = $3 OR guest_id = $3)`,
+    [clean || null, roomId, userId],
+  );
+  if (!r.rowCount) throw new AppError(404, 'Partita non trovata');
+}
+
+/** Cancella la partita per ENTRAMBI i giocatori (stanza condivisa). */
+export async function deleteRoomForBoth(roomId: string, userId: string): Promise<void> {
+  const room = await getRoom(roomId);
+  if (!room || seatOf(room, userId) === null) throw new AppError(404, 'Partita non trovata');
+  await query('DELETE FROM games WHERE room_id = $1', [roomId]); // prima il game (FK)
+  await query('DELETE FROM rooms WHERE id = $1', [roomId]);
 }

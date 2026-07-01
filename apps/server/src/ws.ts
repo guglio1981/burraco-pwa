@@ -6,12 +6,18 @@
 import type { Server } from 'node:http';
 import { WebSocketServer, WebSocket } from 'ws';
 import type { GameState, Seat, Move, Mode } from '@burraco/shared';
-import { buildView, TURN_MS } from '@burraco/shared';
-import { verifyToken } from './auth.js';
+import { buildView, TURN_MS, otherSeat } from '@burraco/shared';
+import { verifyToken, getUser } from './auth.js';
 import { getRoom, roomView, seatOf } from './rooms.js';
-import { applyMoveTx, applyTimeoutTx, nextRoundTx, abandonTx, rematchTx, loadGame } from './game.js';
+import { applyMoveTx, applyTimeoutTx, nextRoundTx, abandonTx, rematchTx, resumeTurnTx, loadGame } from './game.js';
+import { sendPush } from './push.js';
+import { ENV } from './env.js';
 
 const VALID_MODES: ReadonlySet<Mode> = new Set(['fast', '1005', '2005']);
+// URL del frontend per i deep-link delle notifiche (in locale punta comunque alla PWA online)
+const FRONTEND_ORIGIN = ENV.CLIENT_ORIGIN.startsWith('http://localhost')
+  ? 'https://burraco-pwa-server.vercel.app'
+  : ENV.CLIENT_ORIGIN;
 import { TurnTimers } from './timers.js';
 
 interface Conn {
@@ -19,12 +25,16 @@ interface Conn {
   userId: string | null;
   roomId: string | null;
   seat: Seat | null;
+  /** La partita è in primo piano su questo client? (visibilità della pagina).
+   *  Il timer di turno corre SOLO se entrambi i giocatori sono "attivi". */
+  active: boolean;
 }
 
 type ClientMsg =
   | { t: 'auth'; token: string }
   | { t: 'subscribe'; roomId: string }
   | { t: 'resync'; roomId: string }
+  | { t: 'presence'; active: boolean }                   // app in primo piano / in background
   | { t: 'move'; roomId: string; baseRev: number; move: Move }
   | { t: 'next_round'; roomId: string }
   | { t: 'abandon'; roomId: string }
@@ -48,7 +58,7 @@ export class GameHub {
   }
 
   private onConnection(ws: WebSocket): void {
-    const conn: Conn = { ws, userId: null, roomId: null, seat: null };
+    const conn: Conn = { ws, userId: null, roomId: null, seat: null, active: true };
     ws.on('message', (data) => {
       let msg: ClientMsg;
       try {
@@ -65,12 +75,44 @@ export class GameHub {
 
   private detach(conn: Conn): void {
     if (conn.roomId) {
-      const set = this.rooms.get(conn.roomId);
+      const roomId = conn.roomId;
+      const set = this.rooms.get(roomId);
       set?.delete(conn);
       if (set && set.size === 0) {
-        this.rooms.delete(conn.roomId);
-        this.timers.clear(conn.roomId);
+        this.rooms.delete(roomId);
+        this.timers.clear(roomId);
+      } else if (!this.bothActive(roomId)) {
+        // manca un giocatore attivo → il turno va in pausa (nessun timeout mentre è via)
+        this.timers.clear(roomId);
       }
+    }
+  }
+
+  /** Questo seat è presente E in primo piano (sta guardando la partita)? */
+  private seatActive(roomId: string, seat: Seat): boolean {
+    const set = this.rooms.get(roomId);
+    if (!set) return false;
+    for (const c of set) if (c.seat === seat && c.active) return true;
+    return false;
+  }
+
+  /** Entrambi i giocatori hanno la partita in primo piano? (condizione per il timer) */
+  private bothActive(roomId: string): boolean {
+    return this.seatActive(roomId, 'host') && this.seatActive(roomId, 'guest');
+  }
+
+  /** Chiamata quando cambia la presenza (ingresso, uscita, primo piano/background):
+   *  se ora entrambi guardano la partita e c'è un turno in corso, azzera l'orologio
+   *  (nessuna penalità per l'assenza) e riparte il timer; altrimenti mette in pausa. */
+  private async onPresenceChange(roomId: string): Promise<void> {
+    const game = await loadGame(roomId);
+    if (!game) { this.timers.clear(roomId); return; }
+    const live = game.state.phase === 'draw' || game.state.phase === 'play';
+    if (live && this.bothActive(roomId)) {
+      const out = await resumeTurnTx(roomId);
+      if (out.status === 'ok') this.broadcastState(roomId, out.state);
+    } else {
+      this.timers.clear(roomId);
     }
   }
 
@@ -85,6 +127,8 @@ export class GameHub {
         return this.subscribe(conn, msg.roomId);
       case 'resync':
         return this.sendState(conn);
+      case 'presence':
+        return this.handlePresence(conn, msg.active);
       case 'move':
         return this.handleMove(conn, msg.baseRev, msg.move);
       case 'next_round':
@@ -123,6 +167,14 @@ export class GameHub {
 
     send(conn.ws, { t: 'room', room: await roomView(room) });
     await this.sendState(conn);
+    // se ora entrambi guardano la partita, riparte il turno (senza penalità per l'assenza)
+    await this.onPresenceChange(roomId);
+  }
+
+  /** Il client segnala primo piano/background: aggiorna la presenza e (ri)valuta il timer. */
+  private async handlePresence(conn: Conn, active: boolean): Promise<void> {
+    conn.active = active;
+    if (conn.roomId) await this.onPresenceChange(conn.roomId);
   }
 
   /** Invia al singolo conn la vista corrente (se la partita esiste). */
@@ -157,6 +209,10 @@ export class GameHub {
     const out = await applyMoveTx(conn.roomId, conn.seat, baseRev, move);
     if (out.status === 'ok') {
       this.broadcastOppAction(conn.roomId, conn.seat, move);
+      // il turno è passato all'avversario? se è offline, avvisalo con una push
+      if (out.state.turn !== conn.seat) {
+        void this.notifyTurnIfAway(conn.roomId, out.state.turn, out.state);
+      }
       return this.broadcastState(conn.roomId, out.state);
     }
     if (out.status === 'stale') {
@@ -236,12 +292,34 @@ export class GameHub {
   }
 
   private scheduleFromState(roomId: string, state: GameState): void {
-    if (state.phase === 'draw' || state.phase === 'play') {
+    // il timer di turno corre SOLO quando entrambi guardano la partita in primo piano:
+    // se uno è via o in background, la partita resta in pausa e ripristinabile (14 giorni)
+    if ((state.phase === 'draw' || state.phase === 'play') && this.bothActive(roomId)) {
       const remaining = state.turnStart + TURN_MS - Date.now();
       this.timers.arm(roomId, remaining, () => void this.onTimeout(roomId));
     } else {
       this.timers.clear(roomId);
     }
+  }
+
+  /** Se il turno è passato a un giocatore che NON è connesso, mandagli una
+   *  notifica push "tocca a te" (best-effort). */
+  private async notifyTurnIfAway(roomId: string, turnSeat: Seat, state: GameState): Promise<void> {
+    if (state.phase !== 'draw' && state.phase !== 'play') return;
+    if (this.seatActive(roomId, turnSeat)) return; // sta guardando: lo vede da sé
+    try {
+      const room = await getRoom(roomId);
+      if (!room) return;
+      const targetId = turnSeat === 'host' ? room.host_id : room.guest_id;
+      if (!targetId) return;
+      const oppId = turnSeat === 'host' ? room.guest_id : room.host_id;
+      const opp = oppId ? await getUser(oppId) : null;
+      await sendPush(targetId, {
+        title: 'Tocca a te! ♠',
+        body: `${opp?.nick ?? 'Il tuo avversario'} ha giocato — è il tuo turno${room.title ? ` in "${room.title}"` : ''}`,
+        url: `${FRONTEND_ORIGIN}/?resume=${roomId}`,
+      });
+    } catch { /* best-effort */ }
   }
 
   /** Invia all'avversario un messaggio `opp_action` con il tipo di mossa appena effettuata. */
@@ -271,5 +349,20 @@ export class GameHub {
     await this.broadcastRoom(roomId);
     const game = await loadGame(roomId);
     if (game) this.broadcastState(roomId, game.state);
+  }
+
+  /** La partita è stata cancellata da un giocatore: avvisa chi è connesso
+   *  (così esce dalla stanza) e libera memoria + timer. */
+  notifyDeleted(roomId: string): void {
+    const set = this.rooms.get(roomId);
+    if (set) {
+      for (const c of set) {
+        send(c.ws, { t: 'room_deleted' });
+        c.roomId = null;
+        c.seat = null;
+      }
+    }
+    this.rooms.delete(roomId);
+    this.timers.clear(roomId);
   }
 }

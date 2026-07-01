@@ -27,8 +27,16 @@ export interface PublicUser { id: string; nick: string; username: string | null;
 export interface OnlineUser { id: string; nick: string; busy?: boolean; }
 export interface AuthResp { token: string; user: PublicUser; }
 export interface RoomView {
-  id: string; code: string; status: string; gameMode: string;
+  id: string; code: string; status: string; gameMode: string; title?: string | null;
   host: PublicUser | null; guest: PublicUser | null; expiresAt: string;
+}
+
+/** Riga dell'elenco "Le mie partite" (ripresa asincrona). */
+export interface MyGame {
+  id: string; code: string; title: string | null; mode: string; status: string;
+  oppNick: string | null; round: number; phase: string | null;
+  yourTurn: boolean; myScore: number; oppScore: number;
+  updatedAt: string | null; expiresAt: string;
 }
 
 export const api = {
@@ -56,4 +64,11 @@ export const api = {
     req<{ items: OnlineUser[] }>(`/get-online-users?excludeId=${excludeId}`),
   sendPushInvite: (userId: string, roomCode: string) =>
     req<{ status: string }>('/send-push', { method: 'POST', body: JSON.stringify({ userId, roomCode }) }),
+
+  // ── Le mie partite (ripresa asincrona, 14 giorni) ──
+  myGames: () => req<{ items: MyGame[] }>('/my-games'),
+  renameGame: (roomId: string, title: string) =>
+    req<{ ok: boolean }>('/rename-game', { method: 'POST', body: JSON.stringify({ roomId, title }) }),
+  deleteGame: (roomId: string) =>
+    req<{ ok: boolean }>('/delete-game', { method: 'POST', body: JSON.stringify({ roomId }) }),
 };

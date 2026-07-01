@@ -5,7 +5,8 @@ import { Router, type Request, type Response, type NextFunction, type RequestHan
 import type { Mode } from '@burraco/shared';
 import { buildView } from '@burraco/shared';
 import { register, login, guest, getUser, verifyToken, recoverPassword } from './auth.js';
-import { createRoom, joinRoom, getRoom, getRoomByCode, roomView } from './rooms.js';
+import { createRoom, joinRoom, getRoom, getRoomByCode, roomView,
+  listRoomsForUser, setRoomTitle, deleteRoomForBoth } from './rooms.js';
 import { createGameForRoom } from './game.js';
 import { query } from './db.js';
 import { AppError } from './errors.js';
@@ -82,13 +83,59 @@ export function createApiRouter(hub: GameHub): Router {
     if (!room.guest_id) throw new AppError(400, 'Manca l’avversario');
     // guard atomico contro doppio avvio
     const upd = await query(
-      "UPDATE rooms SET status='playing' WHERE id=$1 AND status='waiting' RETURNING *",
+      "UPDATE rooms SET status='playing', expires_at = now() + interval '14 days' WHERE id=$1 AND status='waiting' RETURNING *",
       [roomId],
     );
     if (!upd.rowCount) throw new AppError(409, 'La partita è già iniziata');
     const game = await createGameForRoom(room);
     await hub.pushGameStart(roomId);
     res.json({ room: await roomView({ ...room, status: 'playing' }), view: buildView(game.state, 'host') });
+  }));
+
+  // ── Le mie partite (ripresa asincrona) ──
+  r.get('/my-games', asyncH(async (req, res) => {
+    const userId = requireAuth(req);
+    const rows = await listRoomsForUser(userId);
+    const items = await Promise.all(rows.map(async (row) => {
+      const seat: 'host' | 'guest' = row.host_id === userId ? 'host' : 'guest';
+      const oppId = seat === 'host' ? row.guest_id : row.host_id;
+      const opp = oppId ? await getUser(oppId) : null;
+      const st = row.state;
+      return {
+        id: row.id,
+        code: row.code,
+        title: row.title,
+        mode: row.game_mode,
+        status: row.status,
+        oppNick: opp?.nick ?? null,
+        round: st?.round ?? 1,
+        phase: st?.phase ?? null,
+        yourTurn: st ? st.turn === seat : false,
+        myScore: st ? st.scores[seat] : 0,
+        oppScore: st ? st.scores[seat === 'host' ? 'guest' : 'host'] : 0,
+        updatedAt: row.updated_at,
+        expiresAt: row.expires_at,
+      };
+    }));
+    res.json({ items });
+  }));
+
+  r.post('/rename-game', asyncH(async (req, res) => {
+    const userId = requireAuth(req);
+    const { roomId, title } = req.body as { roomId?: string; title?: string };
+    if (!roomId) throw new AppError(400, 'roomId obbligatorio');
+    await setRoomTitle(roomId, userId, String(title ?? ''));
+    await hub.pushRoom(roomId); // aggiorna eventuali giocatori connessi
+    res.json({ ok: true });
+  }));
+
+  r.post('/delete-game', asyncH(async (req, res) => {
+    const userId = requireAuth(req);
+    const { roomId } = req.body as { roomId?: string };
+    if (!roomId) throw new AppError(400, 'roomId obbligatorio');
+    await hub.notifyDeleted(roomId); // avvisa l'altro giocatore connesso, poi cancella per entrambi
+    await deleteRoomForBoth(roomId, userId);
+    res.json({ ok: true });
   }));
 
   // ── Push notifications ──

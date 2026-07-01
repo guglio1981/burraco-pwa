@@ -28,3 +28,15 @@ export function consumeJoinCode(): string | null {
   }
   return null;
 }
+
+/** Legge `?resume=ROOMID` (deep-link della notifica "tocca a te") e pulisce la URL. */
+export function consumeResumeRoom(): string | null {
+  const url = new URL(window.location.href);
+  const id = url.searchParams.get('resume');
+  if (id) {
+    url.searchParams.delete('resume');
+    history.replaceState(null, '', url.toString());
+    return id;
+  }
+  return null;
+}

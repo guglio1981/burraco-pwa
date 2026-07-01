@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { api } from '../lib/api.js';
+import React, { useState, useEffect } from 'react';
+import { api, type MyGame } from '../lib/api.js';
 import { wsClient } from '../lib/ws.js';
 import { localGame } from '../lib/localGame.js';
 import { loadLocalGame, clearLocalGame, type LocalSave } from '../lib/saveGame.js';
 import type { Difficulty } from '../lib/bot.js';
 import { useStore } from '../lib/store.js';
-import { getToken, clearToken, setActiveRoom } from '../lib/session.js';
+import { getToken, clearToken, setActiveRoom, clearActiveRoom } from '../lib/session.js';
 import { Avatar, Icon, Toast } from '../components/Icon.js';
 import { ProfilePopup } from '../components/Modals.js';
 import { APP_VERSION } from '../lib/version.js';
@@ -53,6 +53,11 @@ function timeAgo(ts: number): string {
   if (h < 24) return `${h} h fa`;
   return `${Math.floor(h / 24)} g fa`;
 }
+function timeAgoIso(iso: string | null): string {
+  if (!iso) return '';
+  const t = new Date(iso).getTime();
+  return Number.isFinite(t) ? timeAgo(t) : '';
+}
 
 const MODE_SHORT: Record<string, string> = { fast: 'Veloce', '1005': '1005', '2005': '2005' };
 const MODE_DESC: Record<string, string> = {
@@ -92,7 +97,44 @@ export function HomeScreen() {
   const [botDiff, setBotDiff] = useState<Difficulty>('medium');
   const [saved, setSaved] = useState<LocalSave | null>(() => loadLocalGame());
   const [open, setOpen] = useState<'new' | 'join' | 'bot' | null>(null);
+  const [games, setGames] = useState<MyGame[]>([]);
   const user = store.user;
+
+  // carica le partite online riprendibili (14 giorni)
+  useEffect(() => {
+    let alive = true;
+    api.myGames().then(({ items }) => { if (alive) setGames(items); }).catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
+  // riprende una partita online dall'elenco: sottoscrive la stanza, la navigazione
+  // al tavolo avviene tramite gli handler onRoom/onState registrati in App.
+  function resumeGame(g: MyGame) {
+    store.setVsComputer(false);
+    setActiveRoom(g.id);
+    wsClient.subscribe(g.id);
+    store.setScreen('waiting');
+  }
+  async function renameGame(g: MyGame) {
+    const title = window.prompt('Titolo della partita', g.title ?? '');
+    if (title === null) return;
+    try {
+      await api.renameGame(g.id, title);
+      setGames((gs) => gs.map((x) => (x.id === g.id ? { ...x, title: title.trim() || null } : x)));
+    } catch (e) {
+      store.showToast(e instanceof Error ? e.message : 'Errore');
+    }
+  }
+  async function deleteGame(g: MyGame) {
+    if (!window.confirm('Cancellare la partita? Verrà eliminata anche per l’altro giocatore.')) return;
+    try {
+      await api.deleteGame(g.id);
+      setGames((gs) => gs.filter((x) => x.id !== g.id));
+      store.showToast('Partita cancellata');
+    } catch (e) {
+      store.showToast(e instanceof Error ? e.message : 'Errore');
+    }
+  }
 
   function startComputer() {
     store.setRoom(null);
@@ -125,6 +167,7 @@ export function HomeScreen() {
         onRematchOffer: (m) => store.setRematchIncoming(m),
         onRematchDecline: () => store.setRematchStatus('declined'),
         onOpponentLeftRoom: () => { store.setRematchIncoming(null); store.setRematchStatus('left'); },
+        onGameDeleted: () => { clearActiveRoom(); store.setRoom(null); store.setVsComputer(false); store.showToast('Partita cancellata'); store.setScreen('home'); },
       });
       wsClient.subscribe(room.id);
       store.setScreen('waiting');
@@ -152,6 +195,7 @@ export function HomeScreen() {
         onRematchOffer: (m) => store.setRematchIncoming(m),
         onRematchDecline: () => store.setRematchStatus('declined'),
         onOpponentLeftRoom: () => { store.setRematchIncoming(null); store.setRematchStatus('left'); },
+        onGameDeleted: () => { clearActiveRoom(); store.setRoom(null); store.setVsComputer(false); store.showToast('Partita cancellata'); store.setScreen('home'); },
       });
       wsClient.subscribe(room.id);
       store.setScreen('waiting');
@@ -278,6 +322,52 @@ export function HomeScreen() {
             );
           })}
         </div>
+
+        {/* Le mie partite online (riprendibili per 14 giorni) */}
+        {games.length > 0 && (
+          <div style={{ marginTop: 20 }}>
+            <div className="t-label" style={{ color: 'var(--gold-2)', margin: '0 4px 10px' }}>Le mie partite</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {games.map((g) => (
+                <div key={g.id} style={{ background: 'rgba(22, 39, 32, 0.85)', border: '1.5px solid var(--line)',
+                  borderRadius: 18, padding: '13px 14px', boxShadow: 'var(--sh-1)' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                    <button onClick={() => resumeGame(g)} style={{ flex: 1, minWidth: 0, textAlign: 'left',
+                      background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontFamily: 'var(--font-disp)', fontWeight: 700, fontSize: 16, color: 'var(--ink)',
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {g.title || `vs ${g.oppNick ?? 'Avversario'}`}
+                        </span>
+                        {g.yourTurn && (
+                          <span className="chip" style={{ flexShrink: 0, background: 'var(--gold-soft)', color: 'var(--gold)',
+                            border: '1px solid rgba(229, 187, 89, 0.5)', fontSize: 10, padding: '2px 7px' }}>TOCCA A TE</span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--ink-mut)', marginTop: 3 }}>
+                        {g.status === 'waiting'
+                          ? 'In attesa dell’avversario'
+                          : <>{MODE_SHORT[g.mode]} · Manche {g.round} · {g.myScore}–{g.oppScore}{timeAgoIso(g.updatedAt) && ` · ${timeAgoIso(g.updatedAt)}`}</>}
+                      </div>
+                    </button>
+                    <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                      <button onClick={() => renameGame(g)} aria-label="Rinomina partita"
+                        style={{ background: 'rgba(36, 49, 44, 0.6)', border: '1px solid var(--line)', borderRadius: 10,
+                          padding: '7px 8px', cursor: 'pointer', color: 'var(--ink-mut)' }}>
+                        <Icon name="gear" size={15} />
+                      </button>
+                      <button onClick={() => deleteGame(g)} aria-label="Cancella partita"
+                        style={{ background: 'rgba(186, 43, 46, 0.18)', border: '1px solid rgba(186, 43, 46, 0.5)', borderRadius: 10,
+                          padding: '7px 8px', cursor: 'pointer', color: '#f2716a' }}>
+                        <Icon name="trash" size={15} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* riprendi partita salvata (vs computer) — in fondo */}
         {saved && (

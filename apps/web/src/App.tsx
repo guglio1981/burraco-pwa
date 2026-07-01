@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useStore } from './lib/store.js';
-import { getToken, setToken, consumeJoinCode, getPendingJoin, setPendingJoin, clearPendingJoin, getActiveRoom, setActiveRoom, clearActiveRoom } from './lib/session.js';
+import { getToken, setToken, consumeJoinCode, consumeResumeRoom, getPendingJoin, setPendingJoin, clearPendingJoin, getActiveRoom, setActiveRoom, clearActiveRoom } from './lib/session.js';
 import { api } from './lib/api.js';
 import { wsClient } from './lib/ws.js';
 import { localGame } from './lib/localGame.js';
@@ -24,6 +24,7 @@ export function App() {
   useEffect(() => {
     const joinCode = consumeJoinCode();
     if (joinCode) setPendingJoin(joinCode);
+    const resumeRoom = consumeResumeRoom(); // deep-link notifica "tocca a te"
 
     const token = getToken();
     if (!token) { store.setScreen('login'); return; }
@@ -57,11 +58,25 @@ export function App() {
         onRematchOffer: (m) => store.setRematchIncoming(m),
         onRematchDecline: () => store.setRematchStatus('declined'),
         onOpponentLeftRoom: () => { store.setRematchIncoming(null); store.setRematchStatus('left'); },
+        // partita cancellata (da me o dall'altro giocatore) → torna in Home
+        onGameDeleted: () => {
+          clearActiveRoom();
+          store.setRoom(null);
+          store.setVsComputer(false);
+          store.showToast('Partita cancellata');
+          store.setScreen('home');
+        },
       });
 
       const pending = getPendingJoin();
       const active = getActiveRoom();
-      if (pending) {
+      if (resumeRoom) {
+        // ripresa da notifica: entra direttamente nella partita indicata
+        store.setVsComputer(false);
+        setActiveRoom(resumeRoom);
+        store.setScreen('home'); // onState porterà al tavolo
+        wsClient.subscribe(resumeRoom);
+      } else if (pending) {
         clearPendingJoin();
         api.joinRoom(pending).then(({ room }) => {
           store.setRoom(room);
@@ -83,10 +98,15 @@ export function App() {
     });
   }, []);
 
-  /* ── autosave partita vs computer all'uscita / cambio scheda ── */
+  /* ── presenza (primo piano/background) → il timer di turno corre solo se
+        entrambi guardano la partita; + autosave partita vs computer ── */
   useEffect(() => {
     const save = () => { if (useStore.getState().vsComputer) localGame.saveNow(); };
-    const onVis = () => { if (document.hidden) save(); };
+    const onVis = () => {
+      wsClient.setActive(document.visibilityState === 'visible');
+      if (document.hidden) save();
+    };
+    wsClient.setActive(document.visibilityState === 'visible');
     document.addEventListener('visibilitychange', onVis);
     window.addEventListener('pagehide', save);
     return () => { document.removeEventListener('visibilitychange', onVis); window.removeEventListener('pagehide', save); };

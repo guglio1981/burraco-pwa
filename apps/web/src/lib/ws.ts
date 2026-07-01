@@ -18,6 +18,8 @@ export type WsHandler = {
   onRematchDecline?: () => void;
   /** L'avversario è uscito dalla stanza a fine partita. */
   onOpponentLeftRoom?: () => void;
+  /** La partita è stata cancellata (da me o dall'altro giocatore). */
+  onGameDeleted?: () => void;
 };
 
 interface ServerMsg {
@@ -40,6 +42,8 @@ export class BurracoWS {
   private handlers: WsHandler = {};
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private destroyed = false;
+  /** La partita è in primo piano? (visibilità pagina) — inviato al server come presenza. */
+  private active = typeof document !== 'undefined' ? document.visibilityState === 'visible' : true;
 
   connect(token: string, handlers: WsHandler): void {
     this.token = token;
@@ -55,7 +59,10 @@ export class BurracoWS {
     ws.onopen = () => {
       this.sendRaw({ t: 'auth', token: this.token });
       this.handlers.onConnected?.();
-      if (this.roomId) this.sendRaw({ t: 'subscribe', roomId: this.roomId });
+      if (this.roomId) {
+        this.sendRaw({ t: 'subscribe', roomId: this.roomId });
+        this.sendPresence();
+      }
     };
 
     ws.onmessage = (e: MessageEvent) => {
@@ -105,6 +112,11 @@ export class BurracoWS {
       case 'rematch_left':
         this.handlers.onOpponentLeftRoom?.();
         break;
+      case 'room_deleted':
+        this.roomId = '';
+        this.seat = null;
+        this.handlers.onGameDeleted?.();
+        break;
       case 'error':
         if (msg.error) this.handlers.onError?.(msg.error);
         break;
@@ -115,7 +127,20 @@ export class BurracoWS {
     this.roomId = roomId;
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.sendRaw({ t: 'subscribe', roomId });
+      this.sendPresence();
     }
+  }
+
+  /** Segnala se la partita è in primo piano. Il timer di turno corre solo se
+   *  entrambi i giocatori sono attivi; in background si mette in pausa. */
+  setActive(active: boolean): void {
+    if (this.active === active) return;
+    this.active = active;
+    this.sendPresence();
+  }
+
+  private sendPresence(): void {
+    if (this.roomId) this.sendRaw({ t: 'presence', active: this.active });
   }
 
   move(move: Move): void {

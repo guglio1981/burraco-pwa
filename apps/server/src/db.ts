@@ -74,6 +74,11 @@ export async function migrate(): Promise<void> {
     );
   `);
   await query(`CREATE INDEX IF NOT EXISTS rooms_code_idx ON rooms(code);`);
+  // titolo opzionale della partita (rinominabile dai giocatori)
+  await query(`ALTER TABLE rooms ADD COLUMN IF NOT EXISTS title text;`);
+  // ricerca rapida delle partite di un utente (elenco "Le mie partite")
+  await query(`CREATE INDEX IF NOT EXISTS rooms_host_idx ON rooms(host_id);`);
+  await query(`CREATE INDEX IF NOT EXISTS rooms_guest_idx ON rooms(guest_id);`);
   await query(`
     CREATE TABLE IF NOT EXISTS games (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -84,4 +89,13 @@ export async function migrate(): Promise<void> {
       updated_at timestamptz NOT NULL DEFAULT now()
     );
   `);
+  // Transizione ritenzione 30min→14giorni: estendi la scadenza delle partite
+  // in corso con una mossa recente, così non vengono cancellate al primo avvio.
+  await query(
+    `UPDATE rooms r SET expires_at = now() + interval '14 days'
+       FROM games g
+      WHERE g.room_id = r.id AND r.status = 'playing'
+        AND g.updated_at > now() - interval '14 days'
+        AND r.expires_at < now() + interval '14 days'`,
+  );
 }
