@@ -336,8 +336,8 @@ export function HomeScreen() {
           })}
         </div>
 
-        {/* Le mie partite online (riprendibili per 14 giorni) */}
-        {games.length > 0 && (
+        {/* Le mie partite: online (14 giorni) + vs computer in fondo (sempre una sola) */}
+        {(games.length > 0 || saved) && (
           <div style={{ marginTop: 20 }}>
             <div className="t-label" style={{ color: 'var(--gold-2)', margin: '0 4px 10px' }}>Le mie partite</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -378,35 +378,36 @@ export function HomeScreen() {
                   </div>
                 </div>
               ))}
-            </div>
-          </div>
-        )}
 
-        {/* riprendi partita salvata (vs computer) — in fondo */}
-        {saved && (
-          <div style={{ background: 'linear-gradient(160deg, rgba(26, 55, 44, 0.92), rgba(16, 36, 28, 0.92))',
-            border: '1.5px solid rgba(229, 187, 89, 0.5)', borderRadius: 22, padding: 16, marginTop: 18, boxShadow: 'var(--sh-1)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-              <div className="t-label" style={{ color: 'var(--gold-2)' }}>Riprendi partita</div>
-              <button onClick={deleteSave} aria-label="Elimina partita salvata"
-                style={{ background: 'rgba(186, 43, 46, 0.18)', border: '1px solid rgba(186, 43, 46, 0.5)', borderRadius: 10, padding: '6px 8px', cursor: 'pointer', color: '#f2716a' }}>
-                <Icon name="trash" size={16} />
-              </button>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '4px 0 12px' }}>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--ink)' }}>vs Computer · {DIFF_LABEL[saved.difficulty]}</div>
-                <div style={{ fontSize: 12, color: 'var(--ink-mut)', marginTop: 2 }}>
-                  {MODE_SHORT[saved.state.mode]} · Manche {saved.state.round} · {timeAgo(saved.savedAt)}
+              {/* vs computer — in fondo, sempre una sola (salvataggio locale unico) */}
+              {saved && (
+                <div style={{ background: 'rgba(22, 39, 32, 0.85)', border: '1.5px solid var(--line)',
+                  borderRadius: 18, padding: '13px 14px', boxShadow: 'var(--sh-1)' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                    <button onClick={resumeComputer} style={{ flex: 1, minWidth: 0, textAlign: 'left',
+                      background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                        <Icon name="bolt" size={15} color="var(--gold-2)" />
+                        <span style={{ fontFamily: 'var(--font-disp)', fontWeight: 700, fontSize: 16, color: 'var(--ink)',
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          vs Computer · {DIFF_LABEL[saved.difficulty]}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--ink-mut)', marginTop: 3 }}>
+                        {MODE_SHORT[saved.state.mode]} · Manche {saved.state.round} · {saved.state.scores.host}–{saved.state.scores.guest} · {timeAgo(saved.savedAt)}
+                      </div>
+                    </button>
+                    <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                      <button onClick={deleteSave} aria-label="Elimina partita col computer"
+                        style={{ background: 'rgba(186, 43, 46, 0.18)', border: '1px solid rgba(186, 43, 46, 0.5)', borderRadius: 10,
+                          padding: '7px 8px', cursor: 'pointer', color: '#f2716a' }}>
+                        <Icon name="trash" size={15} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="tnum" style={{ fontFamily: 'var(--font-disp)', fontWeight: 800, fontSize: 18, color: 'var(--gold)' }}>
-                {saved.state.scores.host} – {saved.state.scores.guest}
-              </div>
+              )}
             </div>
-            <button className="btn btn-gold" style={{ width: '100%' }} onClick={resumeComputer}>
-              <Icon name="cards" size={20} /> Continua
-            </button>
           </div>
         )}
 
