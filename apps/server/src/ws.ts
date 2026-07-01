@@ -33,6 +33,7 @@ interface Conn {
 type ClientMsg =
   | { t: 'auth'; token: string }
   | { t: 'subscribe'; roomId: string }
+  | { t: 'unsubscribe' }                                 // esco dalla partita (torno in Home) senza abbandonare
   | { t: 'resync'; roomId: string }
   | { t: 'presence'; active: boolean }                   // app in primo piano / in background
   | { t: 'move'; roomId: string; baseRev: number; move: Move }
@@ -81,9 +82,9 @@ export class GameHub {
       if (set && set.size === 0) {
         this.rooms.delete(roomId);
         this.timers.clear(roomId);
-      } else if (!this.bothActive(roomId)) {
-        // manca un giocatore attivo → il turno va in pausa (nessun timeout mentre è via)
-        this.timers.clear(roomId);
+      } else if (set) {
+        // un giocatore è uscito/disconnesso → chi resta va in pausa (timer fermo + overlay)
+        void this.onPresenceChange(roomId);
       }
     }
   }
@@ -137,6 +138,13 @@ export class GameHub {
       }
       case 'subscribe':
         return this.subscribe(conn, msg.roomId);
+      case 'unsubscribe': {
+        // esco dalla partita mantenendola salvata: mi stacco dalla stanza (chi resta va in pausa)
+        this.detach(conn);
+        conn.roomId = null;
+        conn.seat = null;
+        return;
+      }
       case 'resync':
         return this.sendState(conn);
       case 'presence':

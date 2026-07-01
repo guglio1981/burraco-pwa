@@ -176,6 +176,14 @@ export class BurracoWS {
     this.sendRaw({ t: 'rematch_accept', roomId: this.roomId, mode });
   }
 
+  /** Esco dalla partita in corso tornando in Home, SENZA abbandonare: mi stacco
+   *  dalla stanza (chi resta va in pausa) ma la partita resta salvata e riprendibile. */
+  leaveToHome(): void {
+    if (this.roomId) this.sendRaw({ t: 'unsubscribe' });
+    this.roomId = '';
+    this.seat = null;
+  }
+
   /** Esco dalla stanza a fine partita: avviso l'avversario e dimentico la stanza
    *  (così un'eventuale riconnessione non mi riporta dentro la partita conclusa). */
   leaveRoom(): void {

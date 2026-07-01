@@ -39,7 +39,7 @@ function Row({ label, on, onChange }: { label: string; on: boolean; onChange: (v
   );
 }
 
-export function SettingsSheet({ onClose, onAbandon }: { onClose: () => void; onAbandon: () => void }) {
+export function SettingsSheet({ onClose, onAbandon, onLeave }: { onClose: () => void; onAbandon: () => void; onLeave?: () => void }) {
   const [snd, setSnd] = useState(soundEnabled());
   const [vib, setVib] = useState(vibrationEnabled());
   const [confirming, setConfirming] = useState(false);
@@ -57,6 +57,17 @@ export function SettingsSheet({ onClose, onAbandon }: { onClose: () => void; onA
         <Row label="Vibrazione" on={vib} onChange={(v) => { setVib(v); setVibrationEnabled(v); }} />
 
         <div style={{ height: 1, background: 'var(--line-soft)', margin: '6px 0 16px' }} />
+
+        {onLeave && !confirming && (
+          <>
+            <button className="btn btn-ghost" style={{ width: '100%', marginBottom: 6 }} onClick={onLeave}>
+              Sospendi e torna alla Home
+            </button>
+            <p className="t-mut" style={{ fontSize: 12, textAlign: 'center', margin: '0 0 14px' }}>
+              La partita resta salvata: la ritrovi in “Le mie partite”.
+            </p>
+          </>
+        )}
 
         {!confirming ? (
           <button className="btn" style={{ width: '100%', background: 'rgba(88, 27, 26, 0.5)', border: '1px solid rgba(206, 81, 77, 0.5)', color: '#ffb4ad' }}

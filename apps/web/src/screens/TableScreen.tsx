@@ -7,6 +7,8 @@ import '../styles/table.css';
 import type { Card } from '@burraco/shared';
 import { validateMeld, validateAddToMeld, calcMeldPts } from '@burraco/shared';
 import { gameClient } from '../lib/gameClient.js';
+import { wsClient } from '../lib/ws.js';
+import { localGame } from '../lib/localGame.js';
 import { useStore } from '../lib/store.js';
 import { clearActiveRoom } from '../lib/session.js';
 import { Icon } from '../components/Icon.js';
@@ -692,28 +694,40 @@ export function TableScreen() {
           </div>
         </div>
 
-        {/* Partita in pausa: un giocatore è assente/in background → congela tutto */}
-        {paused && (
-          <div style={{ position: 'absolute', inset: 0, zIndex: 60, background: 'rgba(3, 10, 7, 0.74)',
-            backdropFilter: 'blur(2px)', display: 'flex', flexDirection: 'column', alignItems: 'center',
-            justifyContent: 'center', gap: 14, padding: 26, textAlign: 'center' }}>
-            <div className="b-spin" style={{ width: 34, height: 34, borderRadius: '50%',
-              border: '3px solid rgba(255,255,255,0.18)', borderTopColor: 'var(--gold)' }} />
-            <div style={{ fontFamily: 'var(--font-disp)', fontWeight: 800, fontSize: 22, color: '#fff' }}>Partita in pausa</div>
-            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.78)', maxWidth: 290, lineHeight: 1.45 }}>
-              In attesa che <b style={{ color: 'var(--gold)' }}>{oppName}</b> torni sulla partita.<br />
-              Il tempo è fermo: riprenderete da dove eravate.
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Partita in pausa: sopra a TUTTO (anche badge scarti, HUD, ecc.) — fixed + z altissimo */}
+      {paused && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(3, 10, 7, 0.78)',
+          backdropFilter: 'blur(2px)', display: 'flex', flexDirection: 'column', alignItems: 'center',
+          justifyContent: 'center', gap: 14, padding: 26, textAlign: 'center' }}>
+          <div className="b-spin" style={{ width: 34, height: 34, borderRadius: '50%',
+            border: '3px solid rgba(255,255,255,0.18)', borderTopColor: 'var(--gold)' }} />
+          <div style={{ fontFamily: 'var(--font-disp)', fontWeight: 800, fontSize: 22, color: '#fff' }}>Partita in pausa</div>
+          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.78)', maxWidth: 290, lineHeight: 1.45 }}>
+            In attesa che <b style={{ color: 'var(--gold)' }}>{oppName}</b> torni sulla partita.<br />
+            Il tempo è fermo: riprenderete da dove eravate.
+          </div>
+        </div>
+      )}
       {showSettings && (
         <SettingsSheet
           onClose={() => setShowSettings(false)}
+          onLeave={() => {
+            // torna alla Home SENZA abbandonare: la partita resta salvata in "Le mie partite"
+            if (store.vsComputer) localGame.saveNow(); else wsClient.leaveToHome();
+            clearActiveRoom();
+            setShowSettings(false);
+            store.setPaused(false);
+            store.setRoom(null);
+            store.setVsComputer(false);
+            store.setScreen('home');
+          }}
           onAbandon={() => {
             gameClient.abandon();
             clearActiveRoom();
             setShowSettings(false);
+            store.setPaused(false);
             store.setRoom(null);
             store.setVsComputer(false);
             store.setScreen('home');
