@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { api, type OnlineUser } from '../lib/api.js';
 import { useStore } from '../lib/store.js';
+import { wsClient } from '../lib/ws.js';
 import { Avatar, Icon, IconBtn, Toast } from '../components/Icon.js';
 import { enablePush, pushSupported } from '../lib/push.js';
 import { clearActiveRoom } from '../lib/session.js';
@@ -72,6 +73,7 @@ export function WaitingScreen() {
 
   function cancel() {
     setCancelling(true);
+    wsClient.leaveToHome(); // esco dalla stanza sul server (niente aggancio residuo)
     clearActiveRoom();
     store.setRoom(null);
     store.setScreen('home');

@@ -87,14 +87,16 @@ export class BurracoWS {
   private onMsg(msg: ServerMsg): void {
     switch (msg.t) {
       case 'state':
-        if (msg.view) {
+        // se ho lasciato la stanza (sono in Home) ignoro gli aggiornamenti: non
+        // devo essere trascinato dentro una partita mentre non ci sono più.
+        if (msg.view && this.roomId) {
           this.baseRev = msg.view.rev;
           this.seat = msg.view.you;
           this.handlers.onState?.(msg.view);
         }
         break;
       case 'room':
-        if (msg.room) this.handlers.onRoom?.(msg.room);
+        if (msg.room && this.roomId) this.handlers.onRoom?.(msg.room);
         break;
       case 'stale':
         // rev non combaciante → chiedi resync
