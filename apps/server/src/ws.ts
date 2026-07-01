@@ -246,7 +246,12 @@ export class GameHub {
   private async handleNextRound(conn: Conn): Promise<void> {
     if (!conn.roomId) return;
     const out = await nextRoundTx(conn.roomId);
-    if (out.status === 'ok') return this.broadcastState(conn.roomId, out.state);
+    if (out.status === 'ok') {
+      this.broadcastState(conn.roomId, out.state);
+      // ricalcola/trasmette la pausa reale: evita un residuo 'paused:true' da PRIMA
+      // (es. schermo spento durante il round-end) che trapeli nella manche nuova
+      return void this.onPresenceChange(conn.roomId);
+    }
     if (out.status === 'error') send(conn.ws, { t: 'error', error: out.error });
   }
 
@@ -300,6 +305,9 @@ export class GameHub {
     if (out.status !== 'ok') return send(conn.ws, { t: 'error', error: out.status === 'error' ? out.error : 'Rivincita non disponibile' });
     await this.broadcastRoom(conn.roomId);
     this.broadcastState(conn.roomId, out.state);
+    // ricalcola/trasmette la pausa reale: evita un residuo 'paused:true' da PRIMA
+    // (es. schermo spento durante l'attesa della rivincita) che trapeli nella nuova partita
+    await this.onPresenceChange(conn.roomId);
   }
 
   /** A fine partita esco dalla stanza: avviso l'avversario e mi stacco (così,
@@ -370,6 +378,8 @@ export class GameHub {
     await this.broadcastRoom(roomId);
     const game = await loadGame(roomId);
     if (game) this.broadcastState(roomId, game.state);
+    // ricalcola/trasmette la pausa reale: garantisce paused:false a un avvio pulito
+    await this.onPresenceChange(roomId);
   }
 
   /** La partita è stata cancellata da un giocatore: avvisa chi è connesso

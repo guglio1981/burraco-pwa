@@ -88,9 +88,15 @@ export const useStore = create<AppState>((set, get) => ({
     } else if (phase === 'finished') {
       screen = 'victory';
     }
-    // la pausa ha senso solo in fase live; fuori (round-end/vittoria/attesa) la azzero
-    const notLive = !(phase === 'draw' || phase === 'play');
-    set({ gameView, screen, selectedIds: [], ...rematchReset, ...(notLive ? { paused: false } : {}) });
+    // la pausa ha senso solo DURANTE una fase live continuativa: la azzero sia
+    // quando si esce dal vivo (round-end/vittoria/attesa), sia quando si (ri)entra
+    // nel vivo (nuova partita/rivincita/manche) — un residuo di pausa da PRIMA
+    // (es. lo schermo dell'avversario si è spento mentre guardava la vittoria)
+    // non deve trapelare nella partita successiva.
+    const isLive = phase === 'draw' || phase === 'play';
+    const wasLive = get().gameView ? (get().gameView!.phase === 'draw' || get().gameView!.phase === 'play') : false;
+    const pausedReset = (!isLive || !wasLive) ? { paused: false } : {};
+    set({ gameView, screen, selectedIds: [], ...rematchReset, ...pausedReset });
   },
   showToast: (msg, ms = 1800) => {
     set({ toast: msg });
