@@ -540,6 +540,18 @@ export function TableScreen() {
   const myMeldMr = meldGap(view.myMelds.length);
   const oppMeldMr = meldGap(view.oppMelds.length);
 
+  // Sospendi e torna alla Home SENZA abbandonare: la partita resta salvata e, al
+  // prossimo accesso, si parte dalla Home (activeRoom azzerato) e non dalla partita.
+  function suspendToHome() {
+    if (store.vsComputer) localGame.saveNow(); else wsClient.leaveToHome();
+    clearActiveRoom();
+    setShowSettings(false);
+    store.setPaused(false);
+    store.setRoom(null);
+    store.setVsComputer(false);
+    store.setScreen('home');
+  }
+
   return (
     <div className="legacy-table">
       <div className="lt-safe" />
@@ -708,21 +720,18 @@ export function TableScreen() {
             In attesa che <b style={{ color: 'var(--gold)' }}>{oppName}</b> torni sulla partita.<br />
             Il tempo è fermo: riprenderete da dove eravate.
           </div>
+          <button className="btn btn-ghost" style={{ marginTop: 8 }} onClick={suspendToHome}>
+            Torna alla Home
+          </button>
+          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', maxWidth: 260 }}>
+            La partita resta salvata in “Le mie partite”.
+          </div>
         </div>
       )}
       {showSettings && (
         <SettingsSheet
           onClose={() => setShowSettings(false)}
-          onLeave={() => {
-            // torna alla Home SENZA abbandonare: la partita resta salvata in "Le mie partite"
-            if (store.vsComputer) localGame.saveNow(); else wsClient.leaveToHome();
-            clearActiveRoom();
-            setShowSettings(false);
-            store.setPaused(false);
-            store.setRoom(null);
-            store.setVsComputer(false);
-            store.setScreen('home');
-          }}
+          onLeave={suspendToHome}
           onAbandon={() => {
             gameClient.abandon();
             clearActiveRoom();
