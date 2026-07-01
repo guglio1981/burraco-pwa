@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useStore } from './lib/store.js';
-import { getToken, setToken, consumeJoinCode, consumeResumeRoom, getPendingJoin, setPendingJoin, clearPendingJoin, getActiveRoom, setActiveRoom, clearActiveRoom } from './lib/session.js';
+import { getToken, setToken, consumeJoinCode, consumeResumeRoom, getPendingJoin, setPendingJoin, clearPendingJoin, getActiveRoom, setActiveRoom, clearActiveRoom, wasSessionAlreadyOpen, markSessionAlive } from './lib/session.js';
 import { api } from './lib/api.js';
 import { wsClient } from './lib/ws.js';
 import { localGame } from './lib/localGame.js';
@@ -22,6 +22,13 @@ export function App() {
 
   /* ── bootstrap: token + deep-link ?join= ── */
   useEffect(() => {
+    // distingue "solo tornato dal background" (scheda già aperta prima) da
+    // "app chiusa e riaperta da zero": nel secondo caso NON si rientra in
+    // automatico nella partita, si va in Home (la partita resta comunque
+    // raggiungibile da "Le mie partite").
+    const wasAlreadyOpen = wasSessionAlreadyOpen();
+    markSessionAlive();
+
     const joinCode = consumeJoinCode();
     if (joinCode) setPendingJoin(joinCode);
     const resumeRoom = consumeResumeRoom(); // deep-link notifica "tocca a te"
@@ -87,13 +94,15 @@ export function App() {
           wsClient.subscribe(room.id);
           store.setScreen('waiting');
         }).catch(() => { clearActiveRoom(); store.setScreen('home'); });
-      } else if (active) {
-        // riapertura app con una partita già in corso: è una ripresa, non un nuovo inizio
+      } else if (active && wasAlreadyOpen) {
+        // tornati dal background (la scheda era già aperta): si rientra nella partita
         store.setVsComputer(false); // partita ONLINE
         store.setSuppressDeal(true); // niente distribuzione: le carte sono già in tavola
         store.setScreen('home');
         wsClient.subscribe(active);
       } else {
+        // avvio a freddo (app chiusa e riaperta, o prima apertura): si parte dalla Home,
+        // la partita resta comunque raggiungibile da "Le mie partite"
         store.setScreen('home');
       }
     }).catch(() => {
