@@ -68,7 +68,7 @@ export const api = {
   // ── Le mie partite (ripresa asincrona, 14 giorni) ──
   myGames: () => req<{ items: MyGame[] }>('/my-games'),
   renameGame: (roomId: string, title: string) =>
-    req<{ ok: boolean }>('/rename-game', { method: 'POST', body: JSON.stringify({ roomId, title }) }),
+    req<{ ok: boolean; title: string }>('/rename-game', { method: 'POST', body: JSON.stringify({ roomId, title }) }),
   deleteGame: (roomId: string) =>
     req<{ ok: boolean }>('/delete-game', { method: 'POST', body: JSON.stringify({ roomId }) }),
 };

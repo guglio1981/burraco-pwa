@@ -129,8 +129,9 @@ export function HomeScreen() {
     const title = renameText;
     setRenaming(null);
     try {
-      await api.renameGame(g.id, title);
-      setGames((gs) => gs.map((x) => (x.id === g.id ? { ...x, title: title.trim() || null } : x)));
+      const { title: saved } = await api.renameGame(g.id, title);
+      // il server rigenera il default "host vs guest" se il campo è vuoto → uso il titolo effettivo
+      setGames((gs) => gs.map((x) => (x.id === g.id ? { ...x, title: saved } : x)));
     } catch (e) {
       store.showToast(e instanceof Error ? e.message : 'Errore');
     }
@@ -433,7 +434,7 @@ export function HomeScreen() {
                 border: '1.5px solid var(--line)', borderRadius: 12, padding: '12px 14px',
                 color: 'var(--ink)', fontSize: 16, fontFamily: 'var(--font-ui)', outline: 'none' }} />
             <div style={{ fontSize: 11.5, color: 'var(--ink-dim)', margin: '8px 2px 0' }}>
-              Lascia vuoto per usare il nome dell’avversario.
+              Lascia vuoto per tornare al titolo di default (nome host vs nome guest).
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
               <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setRenaming(null)}>Annulla</button>

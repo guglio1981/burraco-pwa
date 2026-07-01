@@ -152,14 +152,25 @@ export async function deleteOtherRoomsForPair(hostId: string, guestId: string, e
   return ids;
 }
 
-/** Rinomina la partita (consentito a entrambi i giocatori). Titolo vuoto → rimosso. */
-export async function setRoomTitle(roomId: string, userId: string, title: string): Promise<void> {
+/** Titolo di default di una partita: "nome host vs nome guest". */
+export async function defaultRoomTitle(room: RoomRow): Promise<string> {
+  const host = await getUser(room.host_id);
+  const guest = room.guest_id ? await getUser(room.guest_id) : null;
+  return `${host?.nick ?? 'Host'} vs ${guest?.nick ?? 'Avversario'}`;
+}
+
+/** Rinomina la partita (consentito a entrambi i giocatori). Se il titolo è vuoto
+ *  torna al default "nome host vs nome guest". Ritorna il titolo effettivo salvato. */
+export async function setRoomTitle(roomId: string, userId: string, title: string): Promise<string> {
+  const room = await getRoom(roomId);
+  if (!room || seatOf(room, userId) === null) throw new AppError(404, 'Partita non trovata');
   const clean = title.trim().slice(0, 60);
-  const r = await query(
+  const finalTitle = clean || await defaultRoomTitle(room);
+  await query(
     `UPDATE rooms SET title = $1 WHERE id = $2 AND (host_id = $3 OR guest_id = $3)`,
-    [clean || null, roomId, userId],
+    [finalTitle, roomId, userId],
   );
-  if (!r.rowCount) throw new AppError(404, 'Partita non trovata');
+  return finalTitle;
 }
 
 /** Cancella la partita per ENTRAMBI i giocatori (stanza condivisa). */

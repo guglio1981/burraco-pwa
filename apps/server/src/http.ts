@@ -6,7 +6,7 @@ import type { Mode } from '@burraco/shared';
 import { buildView } from '@burraco/shared';
 import { register, login, guest, getUser, verifyToken, recoverPassword } from './auth.js';
 import { createRoom, joinRoom, getRoom, getRoomByCode, roomView,
-  listRoomsForUser, setRoomTitle, deleteRoomForBoth, deleteOtherRoomsForPair } from './rooms.js';
+  listRoomsForUser, setRoomTitle, deleteRoomForBoth, deleteOtherRoomsForPair, defaultRoomTitle } from './rooms.js';
 import { createGameForRoom } from './game.js';
 import { query } from './db.js';
 import { AppError } from './errors.js';
@@ -93,9 +93,7 @@ export function createApiRouter(hub: GameHub): Router {
     const removedIds = await deleteOtherRoomsForPair(room.host_id, room.guest_id, roomId);
     for (const id of removedIds) hub.notifyDeleted(id);
     // titolo di default della partita: "nome host vs nome guest" (uguale per entrambi)
-    const hostU = await getUser(room.host_id);
-    const guestU = room.guest_id ? await getUser(room.guest_id) : null;
-    const defaultTitle = `${hostU?.nick ?? 'Host'} vs ${guestU?.nick ?? 'Avversario'}`;
+    const defaultTitle = await defaultRoomTitle(room);
     await query('UPDATE rooms SET title = COALESCE(title, $1) WHERE id = $2', [defaultTitle, roomId]);
     await hub.pushGameStart(roomId);
     res.json({ room: await roomView({ ...room, status: 'playing', title: defaultTitle }), view: buildView(game.state, 'host') });
@@ -133,9 +131,9 @@ export function createApiRouter(hub: GameHub): Router {
     const userId = requireAuth(req);
     const { roomId, title } = req.body as { roomId?: string; title?: string };
     if (!roomId) throw new AppError(400, 'roomId obbligatorio');
-    await setRoomTitle(roomId, userId, String(title ?? ''));
+    const finalTitle = await setRoomTitle(roomId, userId, String(title ?? ''));
     await hub.pushRoom(roomId); // aggiorna eventuali giocatori connessi
-    res.json({ ok: true });
+    res.json({ ok: true, title: finalTitle });
   }));
 
   r.post('/delete-game', asyncH(async (req, res) => {
