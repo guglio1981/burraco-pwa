@@ -50,7 +50,7 @@ export function TableScreen() {
     function loop() {
       const v = viewRef.current;
       let next = 1000;
-      if (v && v.turn === v.you && (v.phase === 'draw' || v.phase === 'play')) {
+      if (!useStore.getState().paused && v && v.turn === v.you && (v.phase === 'draw' || v.phase === 'play')) {
         const remaining = Math.max(0, 60000 - (Date.now() - v.turnStart));
         const urgent = remaining <= 10000;
         sfx.tick(urgent);
@@ -65,6 +65,8 @@ export function TableScreen() {
   // Disabilita la transizione CSS del timer per un frame quando cambia il turno,
   // così il reset a 100% è istantaneo invece di animare la risalita
   const [timerAnimate, setTimerAnimate] = useState(false);
+  // frazione del timer "congelata" all'ultimo valore prima della pausa
+  const pausedFracRef = useRef(1);
   const prevTurnKeyRef = useRef<string | null>(null);
   useEffect(() => {
     if (!view) return;
@@ -506,10 +508,14 @@ export function TableScreen() {
     }
   }
 
-  // Timer
+  // Timer — quando la partita è in pausa (avversario assente/in background) il
+  // conto alla rovescia si CONGELA all'ultimo valore, invece di continuare a scorrere.
+  const paused = store.paused;
   const elapsed = Math.floor((Date.now() - view.turnStart) / 1000);
-  const timerSec = Math.max(0, 60 - elapsed);
-  const timerFrac = timerSec / 60;
+  const liveTimerSec = Math.max(0, 60 - elapsed);
+  const liveFrac = liveTimerSec / 60;
+  if (!paused) pausedFracRef.current = liveFrac;
+  const timerFrac = paused ? pausedFracRef.current : liveFrac;
 
   const topCard = view.discard.length > 0 ? view.discard[view.discard.length - 1] : null;
 
@@ -686,6 +692,20 @@ export function TableScreen() {
           </div>
         </div>
 
+        {/* Partita in pausa: un giocatore è assente/in background → congela tutto */}
+        {paused && (
+          <div style={{ position: 'absolute', inset: 0, zIndex: 60, background: 'rgba(3, 10, 7, 0.74)',
+            backdropFilter: 'blur(2px)', display: 'flex', flexDirection: 'column', alignItems: 'center',
+            justifyContent: 'center', gap: 14, padding: 26, textAlign: 'center' }}>
+            <div className="b-spin" style={{ width: 34, height: 34, borderRadius: '50%',
+              border: '3px solid rgba(255,255,255,0.18)', borderTopColor: 'var(--gold)' }} />
+            <div style={{ fontFamily: 'var(--font-disp)', fontWeight: 800, fontSize: 22, color: '#fff' }}>Partita in pausa</div>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.78)', maxWidth: 290, lineHeight: 1.45 }}>
+              In attesa che <b style={{ color: 'var(--gold)' }}>{oppName}</b> torni sulla partita.<br />
+              Il tempo è fermo: riprenderete da dove eravate.
+            </div>
+          </div>
+        )}
       </div>
       {showSettings && (
         <SettingsSheet

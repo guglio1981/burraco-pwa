@@ -108,12 +108,24 @@ export class GameHub {
     const game = await loadGame(roomId);
     if (!game) { this.timers.clear(roomId); return; }
     const live = game.state.phase === 'draw' || game.state.phase === 'play';
-    if (live && this.bothActive(roomId)) {
+    if (!live) { this.timers.clear(roomId); return; }
+    if (this.bothActive(roomId)) {
+      // entrambi presenti → riparte il turno (60s puliti) e la partita si sblocca
       const out = await resumeTurnTx(roomId);
       if (out.status === 'ok') this.broadcastState(roomId, out.state);
+      this.broadcastPaused(roomId, false);
     } else {
+      // manca un giocatore → partita CONGELATA: timer fermo, niente timeout
       this.timers.clear(roomId);
+      this.broadcastPaused(roomId, true);
     }
+  }
+
+  /** Comunica ai client se la partita è in pausa (un giocatore assente/in background). */
+  private broadcastPaused(roomId: string, paused: boolean): void {
+    const set = this.rooms.get(roomId);
+    if (!set) return;
+    for (const c of set) if (c.seat) send(c.ws, { t: 'paused', paused });
   }
 
   private async onMessage(conn: Conn, msg: ClientMsg): Promise<void> {

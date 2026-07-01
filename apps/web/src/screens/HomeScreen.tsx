@@ -178,6 +178,7 @@ export function HomeScreen() {
         onRematchOffer: (m) => store.setRematchIncoming(m),
         onRematchDecline: () => store.setRematchStatus('declined'),
         onOpponentLeftRoom: () => { store.setRematchIncoming(null); store.setRematchStatus('left'); },
+        onPaused: (p) => store.setPaused(p),
         onGameDeleted: () => { clearActiveRoom(); store.setRoom(null); store.setVsComputer(false); store.showToast('Partita cancellata'); store.setScreen('home'); },
       });
       wsClient.subscribe(room.id);
@@ -206,6 +207,7 @@ export function HomeScreen() {
         onRematchOffer: (m) => store.setRematchIncoming(m),
         onRematchDecline: () => store.setRematchStatus('declined'),
         onOpponentLeftRoom: () => { store.setRematchIncoming(null); store.setRematchStatus('left'); },
+        onPaused: (p) => store.setPaused(p),
         onGameDeleted: () => { clearActiveRoom(); store.setRoom(null); store.setVsComputer(false); store.showToast('Partita cancellata'); store.setScreen('home'); },
       });
       wsClient.subscribe(room.id);

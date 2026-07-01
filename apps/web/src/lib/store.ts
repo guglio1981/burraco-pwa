@@ -35,6 +35,8 @@ export interface AppState {
   rematchIncoming: Mode | null;
   /** HOST: stato della propria proposta di rivincita. */
   rematchStatus: RematchStatus;
+  /** Partita congelata: un giocatore è assente/in background (timer fermo). */
+  paused: boolean;
 
   setScreen: (s: Screen) => void;
   setUser: (u: PublicUser | null) => void;
@@ -48,6 +50,7 @@ export interface AppState {
   setSuppressDeal: (v: boolean) => void;
   setRematchIncoming: (m: Mode | null) => void;
   setRematchStatus: (s: RematchStatus) => void;
+  setPaused: (v: boolean) => void;
   /** Notifica abbandono avversario: mostra popup solo se sono ancora in partita */
   notifyOpponentLeft: () => void;
   logout: () => void;
@@ -65,6 +68,7 @@ export const useStore = create<AppState>((set, get) => ({
   suppressDeal: false,
   rematchIncoming: null,
   rematchStatus: 'idle',
+  paused: false,
 
   setScreen: (screen) => set({ screen }),
   setUser: (user) => set({ user }),
@@ -84,7 +88,9 @@ export const useStore = create<AppState>((set, get) => ({
     } else if (phase === 'finished') {
       screen = 'victory';
     }
-    set({ gameView, screen, selectedIds: [], ...rematchReset });
+    // la pausa ha senso solo in fase live; fuori (round-end/vittoria/attesa) la azzero
+    const notLive = !(phase === 'draw' || phase === 'play');
+    set({ gameView, screen, selectedIds: [], ...rematchReset, ...(notLive ? { paused: false } : {}) });
   },
   showToast: (msg, ms = 1800) => {
     set({ toast: msg });
@@ -101,10 +107,11 @@ export const useStore = create<AppState>((set, get) => ({
   setSuppressDeal: (suppressDeal) => set({ suppressDeal }),
   setRematchIncoming: (rematchIncoming) => set({ rematchIncoming }),
   setRematchStatus: (rematchStatus) => set({ rematchStatus }),
+  setPaused: (paused) => set({ paused }),
   notifyOpponentLeft: () => {
     const s = get().screen;
     // ignora se sono già fuori dalla partita (login/home) — es. dopo aver abbandonato io
     if (s !== 'login' && s !== 'home') set({ opponentLeft: true });
   },
-  logout: () => { clearActiveRoom(); set({ user: null, room: null, gameView: null, screen: 'login', selectedIds: [], opponentLeft: false, vsComputer: false, suppressDeal: false, rematchIncoming: null, rematchStatus: 'idle' }); },
+  logout: () => { clearActiveRoom(); set({ user: null, room: null, gameView: null, screen: 'login', selectedIds: [], opponentLeft: false, vsComputer: false, suppressDeal: false, rematchIncoming: null, rematchStatus: 'idle', paused: false }); },
 }));

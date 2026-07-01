@@ -20,6 +20,8 @@ export type WsHandler = {
   onOpponentLeftRoom?: () => void;
   /** La partita è stata cancellata (da me o dall'altro giocatore). */
   onGameDeleted?: () => void;
+  /** La partita è in pausa (un giocatore è assente/in background) o è ripresa. */
+  onPaused?: (paused: boolean) => void;
 };
 
 interface ServerMsg {
@@ -31,6 +33,7 @@ interface ServerMsg {
   action?: string;
   seat?: Seat;
   mode?: Mode;
+  paused?: boolean;
 }
 
 export class BurracoWS {
@@ -116,6 +119,9 @@ export class BurracoWS {
         this.roomId = '';
         this.seat = null;
         this.handlers.onGameDeleted?.();
+        break;
+      case 'paused':
+        this.handlers.onPaused?.(msg.paused === true);
         break;
       case 'error':
         if (msg.error) this.handlers.onError?.(msg.error);
