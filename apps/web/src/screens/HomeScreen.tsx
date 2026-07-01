@@ -100,6 +100,7 @@ export function HomeScreen() {
   const [games, setGames] = useState<MyGame[]>([]);
   const [renaming, setRenaming] = useState<MyGame | null>(null);
   const [renameText, setRenameText] = useState('');
+  const [deleting, setDeleting] = useState<MyGame | null>(null);
   const user = store.user;
 
   // carica le partite online riprendibili (14 giorni)
@@ -133,8 +134,10 @@ export function HomeScreen() {
       store.showToast(e instanceof Error ? e.message : 'Errore');
     }
   }
-  async function deleteGame(g: MyGame) {
-    if (!window.confirm('Cancellare la partita? Verrà eliminata anche per l’altro giocatore.')) return;
+  async function confirmDelete() {
+    if (!deleting) return;
+    const g = deleting;
+    setDeleting(null);
     try {
       await api.deleteGame(g.id);
       setGames((gs) => gs.filter((x) => x.id !== g.id));
@@ -364,7 +367,7 @@ export function HomeScreen() {
                           padding: '7px 8px', cursor: 'pointer', color: 'var(--ink-mut)' }}>
                         <Icon name="gear" size={15} />
                       </button>
-                      <button onClick={() => deleteGame(g)} aria-label="Cancella partita"
+                      <button onClick={() => setDeleting(g)} aria-label="Cancella partita"
                         style={{ background: 'rgba(186, 43, 46, 0.18)', border: '1px solid rgba(186, 43, 46, 0.5)', borderRadius: 10,
                           padding: '7px 8px', cursor: 'pointer', color: '#f2716a' }}>
                         <Icon name="trash" size={15} />
@@ -431,6 +434,34 @@ export function HomeScreen() {
             <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
               <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setRenaming(null)}>Annulla</button>
               <button className="btn btn-gold" style={{ flex: 1 }} onClick={() => void saveRename()}>Salva</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dialog conferma cancellazione (stile app) */}
+      {deleting && (
+        <div onClick={() => setDeleting(null)} style={{ position: 'absolute', inset: 0, zIndex: 50,
+          background: 'rgba(1, 8, 5, 0.6)', backdropFilter: 'blur(3px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 340,
+            background: 'linear-gradient(160deg, rgba(26, 55, 44, 0.98), rgba(16, 36, 28, 0.98))',
+            border: '1.5px solid rgba(186, 43, 46, 0.5)', borderRadius: 22, padding: 22, boxShadow: 'var(--sh-2)', textAlign: 'center' }}>
+            <div style={{ width: 52, height: 52, borderRadius: 15, margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(186, 43, 46, 0.18)', border: '1px solid rgba(186, 43, 46, 0.5)', color: '#f2716a' }}>
+              <Icon name="trash" size={24} />
+            </div>
+            <div style={{ fontFamily: 'var(--font-disp)', fontWeight: 800, fontSize: 19, color: 'var(--ink)', marginBottom: 6 }}>
+              Cancellare la partita?
+            </div>
+            <div style={{ fontSize: 13.5, color: 'var(--ink-mut)', marginBottom: 18, lineHeight: 1.4 }}>
+              <b style={{ color: 'var(--ink)' }}>{deleting.title || `vs ${deleting.oppNick ?? 'Avversario'}`}</b> verrà eliminata
+              anche per l’altro giocatore. L’azione non è reversibile.
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setDeleting(null)}>Annulla</button>
+              <button className="btn" style={{ flex: 1, background: 'linear-gradient(168deg, #d24a44, #b02b2e)', color: '#fff' }}
+                onClick={() => void confirmDelete()}>Cancella</button>
             </div>
           </div>
         </div>
