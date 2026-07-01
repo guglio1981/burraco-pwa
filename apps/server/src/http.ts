@@ -92,8 +92,13 @@ export function createApiRouter(hub: GameHub): Router {
     // altre tra questi stessi due utenti vengono rimpiazzate da quella nuova
     const removedIds = await deleteOtherRoomsForPair(room.host_id, room.guest_id, roomId);
     for (const id of removedIds) hub.notifyDeleted(id);
+    // titolo di default della partita: "nome host vs nome guest" (uguale per entrambi)
+    const hostU = await getUser(room.host_id);
+    const guestU = room.guest_id ? await getUser(room.guest_id) : null;
+    const defaultTitle = `${hostU?.nick ?? 'Host'} vs ${guestU?.nick ?? 'Avversario'}`;
+    await query('UPDATE rooms SET title = COALESCE(title, $1) WHERE id = $2', [defaultTitle, roomId]);
     await hub.pushGameStart(roomId);
-    res.json({ room: await roomView({ ...room, status: 'playing' }), view: buildView(game.state, 'host') });
+    res.json({ room: await roomView({ ...room, status: 'playing', title: defaultTitle }), view: buildView(game.state, 'host') });
   }));
 
   // ── Le mie partite (ripresa asincrona) ──
