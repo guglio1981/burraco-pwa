@@ -132,7 +132,13 @@ export function createApiRouter(hub: GameHub): Router {
     const { roomId, title } = req.body as { roomId?: string; title?: string };
     if (!roomId) throw new AppError(400, 'roomId obbligatorio');
     const finalTitle = await setRoomTitle(roomId, userId, String(title ?? ''));
-    await hub.pushRoom(roomId); // aggiorna eventuali giocatori connessi
+    await hub.pushRoom(roomId); // aggiorna eventuali giocatori connessi alla stanza
+    // notifica l'ALTRO giocatore (magari in Home) di ri-aggiornare l'elenco in tempo reale
+    const rm = await getRoom(roomId);
+    if (rm) {
+      const otherId = rm.host_id === userId ? rm.guest_id : rm.host_id;
+      if (otherId) hub.notifyGamesChanged(otherId);
+    }
     res.json({ ok: true, title: finalTitle });
   }));
 
@@ -140,8 +146,11 @@ export function createApiRouter(hub: GameHub): Router {
     const userId = requireAuth(req);
     const { roomId } = req.body as { roomId?: string };
     if (!roomId) throw new AppError(400, 'roomId obbligatorio');
-    await hub.notifyDeleted(roomId); // avvisa l'altro giocatore connesso, poi cancella per entrambi
+    const rm = await getRoom(roomId);
+    const otherId = rm ? (rm.host_id === userId ? rm.guest_id : rm.host_id) : null;
+    await hub.notifyDeleted(roomId); // chi è dentro la stanza esce, poi cancella per entrambi
     await deleteRoomForBoth(roomId, userId);
+    if (otherId) hub.notifyGamesChanged(otherId); // chi è in Home aggiorna l'elenco
     res.json({ ok: true });
   }));
 

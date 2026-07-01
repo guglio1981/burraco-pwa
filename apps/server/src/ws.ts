@@ -51,6 +51,9 @@ const send = (ws: WebSocket, obj: unknown): void => {
 export class GameHub {
   private wss: WebSocketServer;
   private rooms = new Map<string, Set<Conn>>();
+  /** Connessioni per utente (anche fuori da una stanza, es. in Home): serve per
+   *  notifiche "personali" come l'aggiornamento dell'elenco "Le mie partite". */
+  private byUser = new Map<string, Set<Conn>>();
   private timers = new TurnTimers();
 
   constructor(server: Server) {
@@ -71,7 +74,28 @@ export class GameHub {
         send(ws, { t: 'error', error: e instanceof Error ? e.message : 'Errore interno' });
       });
     });
-    ws.on('close', () => this.detach(conn));
+    ws.on('close', () => { this.detach(conn); this.removeFromByUser(conn); });
+  }
+
+  private addToByUser(conn: Conn): void {
+    if (!conn.userId) return;
+    let set = this.byUser.get(conn.userId);
+    if (!set) { set = new Set(); this.byUser.set(conn.userId, set); }
+    set.add(conn);
+  }
+
+  private removeFromByUser(conn: Conn): void {
+    if (!conn.userId) return;
+    const set = this.byUser.get(conn.userId);
+    set?.delete(conn);
+    if (set && set.size === 0) this.byUser.delete(conn.userId);
+  }
+
+  /** Invia un payload a TUTTE le connessioni di un utente (anche se in Home). */
+  private notifyUser(userId: string, payload: unknown): void {
+    const set = this.byUser.get(userId);
+    if (!set) return;
+    for (const c of set) send(c.ws, payload);
   }
 
   private detach(conn: Conn): void {
@@ -134,6 +158,7 @@ export class GameHub {
       case 'auth': {
         conn.userId = verifyToken(msg.token);
         if (!conn.userId) return send(conn.ws, { t: 'error', error: 'Token non valido' });
+        this.addToByUser(conn); // ora raggiungibile per notifiche personali (anche in Home)
         return send(conn.ws, { t: 'hello' });
       }
       case 'subscribe':
@@ -371,6 +396,12 @@ export class GameHub {
   /** Notifica un aggiornamento di stanza (es. il guest è entrato). */
   async pushRoom(roomId: string): Promise<void> {
     await this.broadcastRoom(roomId);
+  }
+
+  /** Segnala a un utente (ovunque sia, anche in Home) che il suo elenco
+   *  "Le mie partite" è cambiato (titolo modificato, partita cancellata, ecc.). */
+  notifyGamesChanged(userId: string): void {
+    this.notifyUser(userId, { t: 'games_changed' });
   }
 
   /** Notifica l'avvio della partita: invia stato + stanza e arma il timer. */

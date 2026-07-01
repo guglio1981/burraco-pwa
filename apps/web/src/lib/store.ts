@@ -37,6 +37,9 @@ export interface AppState {
   rematchStatus: RematchStatus;
   /** Partita congelata: un giocatore è assente/in background (timer fermo). */
   paused: boolean;
+  /** Contatore: incrementa quando il server segnala che "Le mie partite" è cambiato
+   *  (titolo modificato/cancellazione dall'altro giocatore) → forza il refresh. */
+  gamesRev: number;
 
   setScreen: (s: Screen) => void;
   setUser: (u: PublicUser | null) => void;
@@ -51,6 +54,7 @@ export interface AppState {
   setRematchIncoming: (m: Mode | null) => void;
   setRematchStatus: (s: RematchStatus) => void;
   setPaused: (v: boolean) => void;
+  bumpGamesRev: () => void;
   /** Notifica abbandono avversario: mostra popup solo se sono ancora in partita */
   notifyOpponentLeft: () => void;
   logout: () => void;
@@ -69,6 +73,7 @@ export const useStore = create<AppState>((set, get) => ({
   rematchIncoming: null,
   rematchStatus: 'idle',
   paused: false,
+  gamesRev: 0,
 
   setScreen: (screen) => set({ screen }),
   setUser: (user) => set({ user }),
@@ -118,6 +123,7 @@ export const useStore = create<AppState>((set, get) => ({
   setRematchIncoming: (rematchIncoming) => set({ rematchIncoming }),
   setRematchStatus: (rematchStatus) => set({ rematchStatus }),
   setPaused: (paused) => set({ paused }),
+  bumpGamesRev: () => set((s) => ({ gamesRev: s.gamesRev + 1 })),
   notifyOpponentLeft: () => {
     const s = get().screen;
     // ignora se sono già fuori dalla partita (login/home) — es. dopo aver abbandonato io

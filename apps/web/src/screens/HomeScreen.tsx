@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { api, type MyGame } from '../lib/api.js';
 import { wsClient } from '../lib/ws.js';
 import { localGame } from '../lib/localGame.js';
@@ -103,22 +103,28 @@ export function HomeScreen() {
   const [deleting, setDeleting] = useState<MyGame | null>(null);
   const user = store.user;
 
-  // carica le partite online riprendibili (14 giorni); si ri-aggiorna quando l'app
-  // torna in primo piano/riprende il focus, così un titolo cambiato dall'altro
-  // giocatore (o altre modifiche) compare subito senza dover riaprire la Home.
+  // carica le partite online riprendibili (14 giorni)
+  const loadGames = useCallback(() => {
+    api.myGames().then(({ items }) => setGames(items)).catch(() => {});
+  }, []);
+
+  // mount + ri-aggiorna al ritorno in primo piano/focus (fallback offline)
   useEffect(() => {
-    let alive = true;
-    const load = () => api.myGames().then(({ items }) => { if (alive) setGames(items); }).catch(() => {});
-    load();
-    const onBack = () => { if (document.visibilityState === 'visible') load(); };
+    loadGames();
+    const onBack = () => { if (document.visibilityState === 'visible') loadGames(); };
     window.addEventListener('focus', onBack);
     document.addEventListener('visibilitychange', onBack);
     return () => {
-      alive = false;
       window.removeEventListener('focus', onBack);
       document.removeEventListener('visibilitychange', onBack);
     };
-  }, []);
+  }, [loadGames]);
+
+  // TEMPO REALE: il server ha segnalato una modifica (titolo/cancellazione
+  // dall'altro giocatore) → incrementa gamesRev → ricarico anche stando in Home.
+  useEffect(() => {
+    if (store.gamesRev > 0) loadGames();
+  }, [store.gamesRev, loadGames]);
 
   // riprende una partita online dall'elenco: sottoscrive la stanza, la navigazione
   // al tavolo avviene tramite gli handler onRoom/onState registrati in App.
@@ -191,6 +197,7 @@ export function HomeScreen() {
         onRematchDecline: () => store.setRematchStatus('declined'),
         onOpponentLeftRoom: () => { store.setRematchIncoming(null); store.setRematchStatus('left'); },
         onPaused: (p) => store.setPaused(p),
+        onGamesChanged: () => store.bumpGamesRev(),
         onGameDeleted: () => { clearActiveRoom(); store.setRoom(null); store.setVsComputer(false); store.showToast('Partita cancellata'); store.setScreen('home'); },
       });
       wsClient.subscribe(room.id);
@@ -220,6 +227,7 @@ export function HomeScreen() {
         onRematchDecline: () => store.setRematchStatus('declined'),
         onOpponentLeftRoom: () => { store.setRematchIncoming(null); store.setRematchStatus('left'); },
         onPaused: (p) => store.setPaused(p),
+        onGamesChanged: () => store.bumpGamesRev(),
         onGameDeleted: () => { clearActiveRoom(); store.setRoom(null); store.setVsComputer(false); store.showToast('Partita cancellata'); store.setScreen('home'); },
       });
       wsClient.subscribe(room.id);

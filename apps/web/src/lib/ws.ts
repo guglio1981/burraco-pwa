@@ -22,6 +22,8 @@ export type WsHandler = {
   onGameDeleted?: () => void;
   /** La partita è in pausa (un giocatore è assente/in background) o è ripresa. */
   onPaused?: (paused: boolean) => void;
+  /** L'elenco "Le mie partite" è cambiato (l'altro giocatore ha rinominato/cancellato). */
+  onGamesChanged?: () => void;
 };
 
 interface ServerMsg {
@@ -124,6 +126,9 @@ export class BurracoWS {
         break;
       case 'paused':
         this.handlers.onPaused?.(msg.paused === true);
+        break;
+      case 'games_changed':
+        this.handlers.onGamesChanged?.();
         break;
       case 'error':
         if (msg.error) this.handlers.onError?.(msg.error);

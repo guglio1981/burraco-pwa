@@ -66,6 +66,7 @@ export function App() {
         onRematchDecline: () => store.setRematchStatus('declined'),
         onOpponentLeftRoom: () => { store.setRematchIncoming(null); store.setRematchStatus('left'); },
         onPaused: (p) => store.setPaused(p),
+        onGamesChanged: () => store.bumpGamesRev(),
         // partita cancellata (da me o dall'altro giocatore) → torna in Home
         onGameDeleted: () => {
           clearActiveRoom();
