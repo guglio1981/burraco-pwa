@@ -98,6 +98,8 @@ export function HomeScreen() {
   const [saved, setSaved] = useState<LocalSave | null>(() => loadLocalGame());
   const [open, setOpen] = useState<'new' | 'join' | 'bot' | null>(null);
   const [games, setGames] = useState<MyGame[]>([]);
+  const [renaming, setRenaming] = useState<MyGame | null>(null);
+  const [renameText, setRenameText] = useState('');
   const user = store.user;
 
   // carica le partite online riprendibili (14 giorni)
@@ -115,9 +117,15 @@ export function HomeScreen() {
     wsClient.subscribe(g.id);
     store.setScreen('waiting');
   }
-  async function renameGame(g: MyGame) {
-    const title = window.prompt('Titolo della partita', g.title ?? '');
-    if (title === null) return;
+  function openRename(g: MyGame) {
+    setRenaming(g);
+    setRenameText(g.title ?? '');
+  }
+  async function saveRename() {
+    if (!renaming) return;
+    const g = renaming;
+    const title = renameText;
+    setRenaming(null);
     try {
       await api.renameGame(g.id, title);
       setGames((gs) => gs.map((x) => (x.id === g.id ? { ...x, title: title.trim() || null } : x)));
@@ -351,7 +359,7 @@ export function HomeScreen() {
                       </div>
                     </button>
                     <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                      <button onClick={() => renameGame(g)} aria-label="Rinomina partita"
+                      <button onClick={() => openRename(g)} aria-label="Rinomina partita"
                         style={{ background: 'rgba(36, 49, 44, 0.6)', border: '1px solid var(--line)', borderRadius: 10,
                           padding: '7px 8px', cursor: 'pointer', color: 'var(--ink-mut)' }}>
                         <Icon name="gear" size={15} />
@@ -401,6 +409,33 @@ export function HomeScreen() {
           108 carte · 2 mazzi · 2 giocatori
         </div>
       </div>
+      {/* Dialog rinomina partita (stile app) */}
+      {renaming && (
+        <div onClick={() => setRenaming(null)} style={{ position: 'absolute', inset: 0, zIndex: 50,
+          background: 'rgba(1, 8, 5, 0.6)', backdropFilter: 'blur(3px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 340,
+            background: 'linear-gradient(160deg, rgba(26, 55, 44, 0.98), rgba(16, 36, 28, 0.98))',
+            border: '1.5px solid rgba(229, 187, 89, 0.5)', borderRadius: 22, padding: 20, boxShadow: 'var(--sh-2)' }}>
+            <div className="t-label" style={{ color: 'var(--gold-2)', marginBottom: 10 }}>Titolo della partita</div>
+            <input autoFocus value={renameText}
+              onChange={(e) => setRenameText(e.target.value.slice(0, 60))}
+              onKeyDown={(e) => { if (e.key === 'Enter') void saveRename(); }}
+              placeholder={`vs ${renaming.oppNick ?? 'Avversario'}`} maxLength={60}
+              style={{ width: '100%', boxSizing: 'border-box', background: 'rgba(36, 49, 44, 0.6)',
+                border: '1.5px solid var(--line)', borderRadius: 12, padding: '12px 14px',
+                color: 'var(--ink)', fontSize: 16, fontFamily: 'var(--font-ui)', outline: 'none' }} />
+            <div style={{ fontSize: 11.5, color: 'var(--ink-dim)', margin: '8px 2px 0' }}>
+              Lascia vuoto per usare il nome dell’avversario.
+            </div>
+            <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+              <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setRenaming(null)}>Annulla</button>
+              <button className="btn btn-gold" style={{ flex: 1 }} onClick={() => void saveRename()}>Salva</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Toast text={store.toast} />
       {showProfile && (
         <ProfilePopup
