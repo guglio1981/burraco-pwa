@@ -135,6 +135,23 @@ export async function listRoomsForUser(userId: string): Promise<MyGameRow[]> {
   return r.rows;
 }
 
+/** Cancella tutte le ALTRE partite tra la STESSA coppia di giocatori (in qualsiasi
+ *  ordine host/guest), tenendo solo l'ultima appena avviata. Ritorna gli id delle
+ *  stanze cancellate (per poter avvisare eventuali client ancora connessi). */
+export async function deleteOtherRoomsForPair(hostId: string, guestId: string, exceptRoomId: string): Promise<string[]> {
+  const r = await query<{ id: string }>(
+    `SELECT id FROM rooms
+      WHERE id <> $3
+        AND ((host_id = $1 AND guest_id = $2) OR (host_id = $2 AND guest_id = $1))`,
+    [hostId, guestId, exceptRoomId],
+  );
+  const ids = r.rows.map((row) => row.id);
+  if (ids.length === 0) return ids;
+  await query(`DELETE FROM games WHERE room_id = ANY($1::uuid[])`, [ids]);
+  await query(`DELETE FROM rooms WHERE id = ANY($1::uuid[])`, [ids]);
+  return ids;
+}
+
 /** Rinomina la partita (consentito a entrambi i giocatori). Titolo vuoto → rimosso. */
 export async function setRoomTitle(roomId: string, userId: string, title: string): Promise<void> {
   const clean = title.trim().slice(0, 60);

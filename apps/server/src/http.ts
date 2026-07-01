@@ -6,7 +6,7 @@ import type { Mode } from '@burraco/shared';
 import { buildView } from '@burraco/shared';
 import { register, login, guest, getUser, verifyToken, recoverPassword } from './auth.js';
 import { createRoom, joinRoom, getRoom, getRoomByCode, roomView,
-  listRoomsForUser, setRoomTitle, deleteRoomForBoth } from './rooms.js';
+  listRoomsForUser, setRoomTitle, deleteRoomForBoth, deleteOtherRoomsForPair } from './rooms.js';
 import { createGameForRoom } from './game.js';
 import { query } from './db.js';
 import { AppError } from './errors.js';
@@ -88,6 +88,10 @@ export function createApiRouter(hub: GameHub): Router {
     );
     if (!upd.rowCount) throw new AppError(409, 'La partita è già iniziata');
     const game = await createGameForRoom(room);
+    // si tiene una sola partita salvata per coppia di giocatori: le eventuali
+    // altre tra questi stessi due utenti vengono rimpiazzate da quella nuova
+    const removedIds = await deleteOtherRoomsForPair(room.host_id, room.guest_id, roomId);
+    for (const id of removedIds) hub.notifyDeleted(id);
     await hub.pushGameStart(roomId);
     res.json({ room: await roomView({ ...room, status: 'playing' }), view: buildView(game.state, 'host') });
   }));
