@@ -179,7 +179,12 @@ export class BurracoWS {
   /** Esco dalla partita in corso tornando in Home, SENZA abbandonare: mi stacco
    *  dalla stanza (chi resta va in pausa) ma la partita resta salvata e riprendibile. */
   leaveToHome(): void {
-    if (this.roomId) this.sendRaw({ t: 'unsubscribe' });
+    if (this.roomId) {
+      // segnalo "non sto più guardando questa partita" (congela l'avversario), poi mi stacco.
+      // NON tocco this.active (visibilità reale): così la prossima partita non parte in pausa.
+      this.sendRaw({ t: 'presence', active: false });
+      this.sendRaw({ t: 'unsubscribe' });
+    }
     this.roomId = '';
     this.seat = null;
   }

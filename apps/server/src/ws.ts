@@ -178,6 +178,7 @@ export class GameHub {
     this.detach(conn);
     conn.roomId = roomId;
     conn.seat = seat;
+    conn.active = true; // una nuova sottoscrizione parte sempre "in primo piano"
     let set = this.rooms.get(roomId);
     if (!set) {
       set = new Set();
