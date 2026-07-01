@@ -721,7 +721,7 @@ export function TableScreen() {
             Il tempo è fermo: riprenderete da dove eravate.
           </div>
           <button className="btn btn-ghost" style={{ marginTop: 8 }} onClick={suspendToHome}>
-            Torna alla Home
+            Sospendi e torna alla Home
           </button>
           <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', maxWidth: 260 }}>
             La partita resta salvata in “Le mie partite”.
