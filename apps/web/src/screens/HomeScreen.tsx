@@ -103,11 +103,21 @@ export function HomeScreen() {
   const [deleting, setDeleting] = useState<MyGame | null>(null);
   const user = store.user;
 
-  // carica le partite online riprendibili (14 giorni)
+  // carica le partite online riprendibili (14 giorni); si ri-aggiorna quando l'app
+  // torna in primo piano/riprende il focus, così un titolo cambiato dall'altro
+  // giocatore (o altre modifiche) compare subito senza dover riaprire la Home.
   useEffect(() => {
     let alive = true;
-    api.myGames().then(({ items }) => { if (alive) setGames(items); }).catch(() => {});
-    return () => { alive = false; };
+    const load = () => api.myGames().then(({ items }) => { if (alive) setGames(items); }).catch(() => {});
+    load();
+    const onBack = () => { if (document.visibilityState === 'visible') load(); };
+    window.addEventListener('focus', onBack);
+    document.addEventListener('visibilitychange', onBack);
+    return () => {
+      alive = false;
+      window.removeEventListener('focus', onBack);
+      document.removeEventListener('visibilitychange', onBack);
+    };
   }, []);
 
   // riprende una partita online dall'elenco: sottoscrive la stanza, la navigazione
