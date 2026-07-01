@@ -114,6 +114,7 @@ export function HomeScreen() {
   // al tavolo avviene tramite gli handler onRoom/onState registrati in App.
   function resumeGame(g: MyGame) {
     store.setVsComputer(false);
+    store.setSuppressDeal(true); // ripresa: niente distribuzione, la partita è già in corso
     setActiveRoom(g.id);
     wsClient.subscribe(g.id);
     store.setScreen('waiting');

@@ -96,7 +96,11 @@ export const useStore = create<AppState>((set, get) => ({
     const isLive = phase === 'draw' || phase === 'play';
     const wasLive = get().gameView ? (get().gameView!.phase === 'draw' || get().gameView!.phase === 'play') : false;
     const pausedReset = (!isLive || !wasLive) ? { paused: false } : {};
-    set({ gameView, screen, selectedIds: [], ...rematchReset, ...pausedReset });
+    // suppressDeal viene consumato SOLO dal tavolo: se la ripresa porta altrove
+    // (es. partita già conclusa → vittoria) va scartato, altrimenti resterebbe
+    // attivo e sopprimerebbe per errore l'animazione della prossima partita vera.
+    const suppressDealReset = screen !== 'table' && get().suppressDeal ? { suppressDeal: false } : {};
+    set({ gameView, screen, selectedIds: [], ...rematchReset, ...pausedReset, ...suppressDealReset });
   },
   showToast: (msg, ms = 1800) => {
     set({ toast: msg });

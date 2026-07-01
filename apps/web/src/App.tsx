@@ -72,8 +72,9 @@ export function App() {
       const pending = getPendingJoin();
       const active = getActiveRoom();
       if (resumeRoom) {
-        // ripresa da notifica: entra direttamente nella partita indicata
+        // ripresa da notifica: entra direttamente nella partita indicata (già in corso)
         store.setVsComputer(false);
+        store.setSuppressDeal(true); // niente distribuzione: si sta riprendendo, non iniziando
         setActiveRoom(resumeRoom);
         store.setScreen('home'); // onState porterà al tavolo
         wsClient.subscribe(resumeRoom);
@@ -87,8 +88,9 @@ export function App() {
           store.setScreen('waiting');
         }).catch(() => { clearActiveRoom(); store.setScreen('home'); });
       } else if (active) {
-        // tentativo di ripresa: home come fallback se la partita non esiste più
+        // riapertura app con una partita già in corso: è una ripresa, non un nuovo inizio
         store.setVsComputer(false); // partita ONLINE
+        store.setSuppressDeal(true); // niente distribuzione: le carte sono già in tavola
         store.setScreen('home');
         wsClient.subscribe(active);
       } else {
