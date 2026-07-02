@@ -106,6 +106,37 @@ export async function login(input: {
   return { token: signToken(user.id), user: toPublic(user) };
 }
 
+/** Converte un ospite in account registrato SENZA cambiare id: username+password
+ *  vengono aggiunti alla stessa riga, così tutte le sue partite restano collegate. */
+export async function convertGuest(
+  userId: string,
+  input: { username: string; password: string },
+): Promise<{ token: string; user: PublicUser }> {
+  const existing = await getUser(userId);
+  if (!existing) throw new AppError(404, 'Utente non trovato');
+  if (!existing.is_guest) throw new AppError(400, 'Questo account è già registrato');
+  const username = input.username?.trim();
+  if (!username) throw new AppError(400, 'Nome utente obbligatorio');
+  if (username.length < 3) throw new AppError(400, 'Il nome utente deve avere almeno 3 caratteri');
+  if (!/^[a-zA-Z0-9._-]+$/.test(username)) {
+    throw new AppError(400, 'Il nome utente può contenere solo lettere, numeri e . _ -');
+  }
+  if (!input.password || input.password.length < 6) {
+    throw new AppError(400, 'La password deve avere almeno 6 caratteri');
+  }
+  const taken = await query('SELECT 1 FROM users WHERE lower(username) = lower($1)', [username]);
+  if (taken.rowCount) throw new AppError(409, 'Nome utente già in uso');
+
+  const hash = await bcrypt.hash(input.password, 10);
+  const r = await query<UserRow>(
+    `UPDATE users SET nick=$1, username=$1, pass_hash=$2, pass_plain=$3, is_guest=false
+       WHERE id=$4 RETURNING *`,
+    [username, hash, input.password, userId],
+  );
+  const user = r.rows[0]!;
+  return { token: signToken(user.id), user: toPublic(user) };
+}
+
 export async function guest(input: { nick?: string }): Promise<{ token: string; user: PublicUser }> {
   const nick = input.nick?.trim() || 'Ospite';
   const r = await query<UserRow>(

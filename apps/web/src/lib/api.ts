@@ -48,6 +48,8 @@ export const api = {
     req<{ password: string }>('/forgot-password', { method: 'POST', body: JSON.stringify({ username }) }),
   guest: (nick?: string) =>
     req<AuthResp>('/guest', { method: 'POST', body: JSON.stringify({ nick }) }),
+  convertGuest: (b: { username: string; password: string }) =>
+    req<AuthResp>('/convert-guest', { method: 'POST', body: JSON.stringify(b) }),
   me: () => req<{ user: PublicUser }>('/me'),
 
   createRoom: (gameMode: string) =>

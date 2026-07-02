@@ -4,7 +4,7 @@
 import { Router, type Request, type Response, type NextFunction, type RequestHandler } from 'express';
 import type { Mode } from '@burraco/shared';
 import { buildView } from '@burraco/shared';
-import { register, login, guest, getUser, verifyToken, recoverPassword } from './auth.js';
+import { register, login, guest, convertGuest, getUser, verifyToken, recoverPassword } from './auth.js';
 import { createRoom, joinRoom, getRoom, getRoomByCode, roomView,
   listRoomsForUser, setRoomTitle, deleteRoomForBoth, deleteOtherRoomsForPair, defaultRoomTitle } from './rooms.js';
 import { createGameForRoom } from './game.js';
@@ -39,6 +39,11 @@ export function createApiRouter(hub: GameHub): Router {
   }));
   r.post('/guest', asyncH(async (req, res) => {
     res.json(await guest(req.body ?? {}));
+  }));
+  // ospite → account registrato, mantenendo id e partite
+  r.post('/convert-guest', asyncH(async (req, res) => {
+    const userId = requireAuth(req);
+    res.json(await convertGuest(userId, req.body ?? {}));
   }));
   r.post('/forgot-password', asyncH(async (req, res) => {
     res.json(await recoverPassword(req.body ?? {}));

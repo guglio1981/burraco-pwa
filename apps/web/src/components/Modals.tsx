@@ -4,6 +4,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { soundEnabled, setSoundEnabled, vibrationEnabled, setVibrationEnabled } from '../lib/sound.js';
 import { enablePush, pushSupported } from '../lib/push.js';
+import { api, type AuthResp } from '../lib/api.js';
 import { Avatar } from './Icon.js';
 
 const overlayStyle: React.CSSProperties = {
@@ -15,6 +16,11 @@ const cardStyle: React.CSSProperties = {
   width: '100%', maxWidth: 340, background: 'rgba(15, 30, 24, 0.98)',
   border: '1px solid var(--line)', borderRadius: 22, padding: 22,
   boxShadow: 'var(--sh-2)',
+};
+const inputStyle: React.CSSProperties = {
+  width: '100%', boxSizing: 'border-box', padding: '12px 14px', borderRadius: 12,
+  background: 'rgba(36, 49, 44, 0.6)', border: '1.5px solid var(--line)',
+  color: 'var(--ink)', fontFamily: 'var(--font-ui)', fontSize: 15, outline: 'none',
 };
 
 function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
@@ -92,8 +98,9 @@ export function SettingsSheet({ onClose, onAbandon, onLeave }: { onClose: () => 
   );
 }
 
-export function ProfilePopup({ nick, username, isGuest, onLogout, onClose }: {
-  nick: string; username: string | null; isGuest: boolean; onLogout: () => void; onClose: () => void;
+export function ProfilePopup({ nick, username, isGuest, onLogout, onConverted, onClose }: {
+  nick: string; username: string | null; isGuest: boolean;
+  onLogout: () => void; onConverted?: (r: AuthResp) => void; onClose: () => void;
 }) {
   const supported = pushSupported();
   const [perm, setPerm] = useState<NotificationPermission>(
@@ -102,6 +109,28 @@ export function ProfilePopup({ nick, username, isGuest, onLogout, onClose }: {
   const [busy, setBusy] = useState(false);
   const [snd, setSnd] = useState(soundEnabled());
   const [vib, setVib] = useState(vibrationEnabled());
+
+  // conversione ospite → account registrato (mantiene id e partite)
+  const [showConvert, setShowConvert] = useState(false);
+  const [cUser, setCUser] = useState('');
+  const [cPass, setCPass] = useState('');
+  const [cConfirm, setCConfirm] = useState('');
+  const [cErr, setCErr] = useState('');
+  const [cBusy, setCBusy] = useState(false);
+
+  async function convert() {
+    setCErr('');
+    if (cPass !== cConfirm) { setCErr('Le password non coincidono'); return; }
+    setCBusy(true);
+    try {
+      const r = await api.convertGuest({ username: cUser, password: cPass });
+      onConverted?.(r);
+    } catch (e) {
+      setCErr(e instanceof Error ? e.message : 'Errore');
+    } finally {
+      setCBusy(false);
+    }
+  }
 
   async function activate() {
     setBusy(true);
@@ -148,6 +177,41 @@ export function ProfilePopup({ nick, username, isGuest, onLogout, onClose }: {
         <Row label="Suoni" on={snd} onChange={(v) => { setSnd(v); setSoundEnabled(v); }} />
         <div style={{ height: 1, background: 'var(--line-soft)' }} />
         <Row label="Vibrazione" on={vib} onChange={(v) => { setVib(v); setVibrationEnabled(v); }} />
+
+        {isGuest && (
+          <>
+            <div style={{ height: 1, background: 'var(--line-soft)', margin: '8px 0 14px' }} />
+            {!showConvert ? (
+              <>
+                <button className="btn btn-gold" style={{ width: '100%' }} onClick={() => setShowConvert(true)}>
+                  Crea un account
+                </button>
+                <div style={{ fontSize: 12, color: 'var(--ink-dim)', textAlign: 'center', margin: '8px 2px 0', lineHeight: 1.4 }}>
+                  Da ospite le partite si perdono se cambi dispositivo o cancelli i dati. Crea un account per conservarle.
+                </div>
+              </>
+            ) : (
+              <div>
+                <div style={{ fontSize: 12.5, color: 'var(--ink-mut)', marginBottom: 10, lineHeight: 1.4 }}>
+                  Scegli nome utente e password: <b style={{ color: 'var(--ink)' }}>mantieni tutte le tue partite</b> e potrai accedere anche da altri dispositivi.
+                </div>
+                <input placeholder="Nome utente" value={cUser} onChange={(e) => setCUser(e.target.value)}
+                  autoCapitalize="none" autoCorrect="off" spellCheck={false} style={inputStyle} />
+                <input type="password" placeholder="Password (min. 6)" value={cPass} onChange={(e) => setCPass(e.target.value)}
+                  style={{ ...inputStyle, marginTop: 8 }} />
+                <input type="password" placeholder="Conferma password" value={cConfirm} onChange={(e) => setCConfirm(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') void convert(); }} style={{ ...inputStyle, marginTop: 8 }} />
+                {cErr && <div style={{ color: '#ff9189', fontSize: 12.5, marginTop: 8 }}>{cErr}</div>}
+                <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                  <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => { setShowConvert(false); setCErr(''); }}>Annulla</button>
+                  <button className="btn btn-gold" style={{ flex: 1.4, opacity: cBusy ? 0.7 : 1 }} onClick={() => void convert()} disabled={cBusy}>
+                    {cBusy ? '…' : 'Crea account'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
 
         <div style={{ height: 1, background: 'var(--line-soft)', margin: '8px 0 16px' }} />
 

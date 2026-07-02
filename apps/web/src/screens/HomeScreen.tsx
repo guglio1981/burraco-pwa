@@ -5,7 +5,7 @@ import { localGame } from '../lib/localGame.js';
 import { loadLocalGame, clearLocalGame, type LocalSave } from '../lib/saveGame.js';
 import type { Difficulty } from '../lib/bot.js';
 import { useStore } from '../lib/store.js';
-import { getToken, clearToken, setActiveRoom, clearActiveRoom } from '../lib/session.js';
+import { getToken, setToken, clearToken, setActiveRoom, clearActiveRoom } from '../lib/session.js';
 import { Avatar, Icon, Toast } from '../components/Icon.js';
 import { ProfilePopup } from '../components/Modals.js';
 import { APP_VERSION } from '../lib/version.js';
@@ -498,6 +498,7 @@ export function HomeScreen() {
           isGuest={user?.isGuest ?? false}
           onClose={() => setShowProfile(false)}
           onLogout={() => { setShowProfile(false); clearToken(); store.logout(); }}
+          onConverted={(r) => { setToken(r.token); store.setUser(r.user); store.showToast('Account creato — partite conservate'); }}
         />
       )}
       <div style={{ position: 'absolute', right: 10, bottom: 8, fontSize: 11, fontWeight: 700,
