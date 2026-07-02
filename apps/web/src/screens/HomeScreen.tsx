@@ -387,7 +387,7 @@ export function HomeScreen() {
                       <button onClick={() => openRename(g)} aria-label="Rinomina partita"
                         style={{ background: 'rgba(36, 49, 44, 0.6)', border: '1px solid var(--line)', borderRadius: 10,
                           padding: '7px 8px', cursor: 'pointer', color: 'var(--ink-mut)' }}>
-                        <Icon name="gear" size={15} />
+                        <Icon name="pencil" size={15} />
                       </button>
                       <button onClick={() => setDeleting(g)} aria-label="Cancella partita"
                         style={{ background: 'rgba(186, 43, 46, 0.18)', border: '1px solid rgba(186, 43, 46, 0.5)', borderRadius: 10,

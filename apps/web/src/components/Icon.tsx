@@ -3,7 +3,7 @@ import React from 'react';
 type IconName =
   | 'back' | 'close' | 'chevron' | 'plus' | 'bell' | 'gear' | 'clock'
   | 'copy' | 'link' | 'chat' | 'user' | 'users' | 'trophy' | 'cards'
-  | 'bolt' | 'star' | 'check' | 'share' | 'sound' | 'flag' | 'info' | 'deck' | 'eye' | 'trash';
+  | 'bolt' | 'star' | 'check' | 'share' | 'sound' | 'flag' | 'info' | 'deck' | 'eye' | 'trash' | 'pencil';
 
 interface Props { name: IconName; size?: number; color?: string; stroke?: number; }
 
@@ -34,6 +34,7 @@ export function Icon({ name, size = 22, color = 'currentColor', stroke = 2 }: Pr
     info:    <g {...p}><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.5"/></g>,
     eye:     <g {...p}><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></g>,
     trash:   <g {...p}><path d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2M6 7l1 13a1 1 0 001 1h8a1 1 0 001-1l1-13M10 11v6M14 11v6"/></g>,
+    pencil:  <g {...p}><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/><path d="M15 5l4 4"/></g>,
   };
   return <svg width={size} height={size} viewBox="0 0 24 24">{paths[name]}</svg>;
 }
