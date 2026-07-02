@@ -2,8 +2,8 @@
    REST: auth + stanze + avvio partita.
    ============================================================ */
 import { Router, type Request, type Response, type NextFunction, type RequestHandler } from 'express';
-import type { Mode } from '@burraco/shared';
-import { buildView } from '@burraco/shared';
+import type { Mode, Seat } from '@burraco/shared';
+import { buildView, calcMeldPts } from '@burraco/shared';
 import { register, login, guest, convertGuest, getUser, verifyToken, recoverPassword } from './auth.js';
 import { createRoom, joinRoom, getRoom, getRoomByCode, roomView,
   listRoomsForUser, setRoomTitle, deleteRoomForBoth, deleteOtherRoomsForPair, defaultRoomTitle } from './rooms.js';
@@ -113,6 +113,10 @@ export function createApiRouter(hub: GameHub): Router {
       const oppId = seat === 'host' ? row.guest_id : row.host_id;
       const opp = oppId ? await getUser(oppId) : null;
       const st = row.state;
+      // punteggio "live" come al tavolo: cumulativo delle manche concluse + punti
+      // delle scale calate nella manche in corso (così riflette lo stato alla sospensione)
+      const liveScore = (s: Seat): number =>
+        st ? st.scores[s] + st.melds[s].reduce((t, m) => t + calcMeldPts(m), 0) : 0;
       return {
         id: row.id,
         code: row.code,
@@ -123,8 +127,8 @@ export function createApiRouter(hub: GameHub): Router {
         round: st?.round ?? 1,
         phase: st?.phase ?? null,
         yourTurn: st ? st.turn === seat : false,
-        myScore: st ? st.scores[seat] : 0,
-        oppScore: st ? st.scores[seat === 'host' ? 'guest' : 'host'] : 0,
+        myScore: liveScore(seat),
+        oppScore: liveScore(seat === 'host' ? 'guest' : 'host'),
         updatedAt: row.updated_at,
         expiresAt: row.expires_at,
       };
