@@ -157,8 +157,17 @@ export function createApiRouter(hub: GameHub): Router {
   // ── Push notifications ──
   r.post('/push-subscribe', asyncH(async (req, res) => {
     const userId = requireAuth(req);
-    const sub = req.body?.sub;
-    if (!sub) throw new AppError(400, 'Subscription mancante');
+    const sub = req.body?.sub as { endpoint?: string } | undefined;
+    if (!sub || typeof sub !== 'object') throw new AppError(400, 'Subscription mancante');
+    // una subscription (endpoint = browser/dispositivo) appartiene a UN SOLO utente:
+    // la stacco da eventuali altri utenti che l'avevano su questo stesso dispositivo,
+    // così chi accede ora è raggiungibile e non arrivano notifiche all'account sbagliato.
+    if (sub.endpoint) {
+      await query(
+        "UPDATE users SET push_subscription=NULL, notifications_enabled=false WHERE id <> $1 AND push_subscription->>'endpoint' = $2",
+        [userId, sub.endpoint],
+      );
+    }
     await query(
       'UPDATE users SET push_subscription=$1::jsonb, notifications_enabled=true WHERE id=$2',
       [JSON.stringify(sub), userId],

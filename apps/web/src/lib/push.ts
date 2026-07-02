@@ -28,6 +28,27 @@ export async function enablePush(): Promise<boolean> {
   return true;
 }
 
+/** Se il permesso è GIÀ concesso, (ri)assegna la subscription del browser
+ *  all'utente CORRENTE. Serve quando si accede con un altro account sullo stesso
+ *  dispositivo: la subscription era salvata sul vecchio utente e il nuovo non
+ *  risulterebbe raggiungibile dalle notifiche finché non la "reclama". */
+export async function syncPushSubscription(): Promise<boolean> {
+  if (!pushSupported() || Notification.permission !== 'granted') return false;
+  const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+  if (!vapidKey) return false;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription() ?? await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidKey) as unknown as ArrayBuffer,
+    });
+    await api.savePushSubscription(sub.toJSON() as Record<string, unknown>);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function pushSupported(): boolean {
   return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 }

@@ -4,7 +4,7 @@ import { getToken, setToken, consumeJoinCode, consumeResumeRoom, getPendingJoin,
 import { api } from './lib/api.js';
 import { wsClient } from './lib/ws.js';
 import { localGame } from './lib/localGame.js';
-import { enablePush, pushSupported } from './lib/push.js';
+import { enablePush, syncPushSubscription, pushSupported } from './lib/push.js';
 import { LoginScreen } from './screens/LoginScreen.js';
 import { HomeScreen } from './screens/HomeScreen.js';
 import { WaitingScreen } from './screens/WaitingScreen.js';
@@ -38,9 +38,12 @@ export function App() {
 
     api.me().then(({ user }) => {
       store.setUser(user);
-      // chiedi il permesso notifiche al login, solo se non già deciso
-      if (pushSupported() && Notification.permission === 'default') {
-        setTimeout(() => enablePush(), 800);
+      // notifiche: se il permesso è già concesso (magari da un altro account su
+      // questo dispositivo) reclamo la subscription per l'utente CORRENTE; se non
+      // ancora deciso, la chiedo.
+      if (pushSupported()) {
+        if (Notification.permission === 'granted') void syncPushSubscription();
+        else if (Notification.permission === 'default') setTimeout(() => enablePush(), 800);
       }
       wsClient.connect(token, {
         // se sto giocando contro il computer (motore locale) ignora gli stati del server

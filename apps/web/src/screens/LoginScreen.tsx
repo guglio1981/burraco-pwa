@@ -3,7 +3,7 @@ import { api } from '../lib/api.js';
 import { setToken } from '../lib/session.js';
 import { useStore } from '../lib/store.js';
 import { Toast } from '../components/Icon.js';
-import { enablePush, pushSupported } from '../lib/push.js';
+import { enablePush, syncPushSubscription, pushSupported } from '../lib/push.js';
 
 function BrandLogo() {
   return (
@@ -60,8 +60,11 @@ export function LoginScreen() {
       setToken(r.token);
       store.setUser(r.user);
       store.setScreen('home');
-      if (pushSupported() && Notification.permission === 'default') {
-        setTimeout(() => enablePush(), 800);
+      if (pushSupported()) {
+        // permesso già concesso → reclamo la subscription per QUESTO utente
+        // (es. login con un altro account sullo stesso dispositivo); altrimenti la chiedo
+        if (Notification.permission === 'granted') void syncPushSubscription();
+        else if (Notification.permission === 'default') setTimeout(() => enablePush(), 800);
       }
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Errore');
@@ -91,8 +94,11 @@ export function LoginScreen() {
       setToken(r.token);
       store.setUser(r.user);
       store.setScreen('home');
-      if (pushSupported() && Notification.permission === 'default') {
-        setTimeout(() => enablePush(), 800);
+      if (pushSupported()) {
+        // permesso già concesso → reclamo la subscription per QUESTO utente
+        // (es. login con un altro account sullo stesso dispositivo); altrimenti la chiedo
+        if (Notification.permission === 'granted') void syncPushSubscription();
+        else if (Notification.permission === 'default') setTimeout(() => enablePush(), 800);
       }
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Errore');
