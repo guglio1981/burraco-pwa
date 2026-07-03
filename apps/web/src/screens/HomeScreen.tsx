@@ -373,8 +373,8 @@ export function HomeScreen() {
                             background: 'var(--clean)', boxShadow: '0 0 0 3px rgba(108, 231, 161, 0.22)' }} />
                         )}
                         <span style={{ fontFamily: 'var(--font-disp)', fontWeight: 700, fontSize: 16, color: 'var(--ink)',
-                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {g.title || `vs ${(g.oppNick ?? 'Avversario').toUpperCase()}`}
+                          textTransform: 'uppercase', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {g.title || `vs ${g.oppNick ?? 'Avversario'}`}
                         </span>
                         {g.yourTurn && (
                           <span className="chip" style={{ flexShrink: 0, background: 'var(--gold-soft)', color: 'var(--gold)',
@@ -413,7 +413,7 @@ export function HomeScreen() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                         <Icon name="bolt" size={15} color="var(--gold-2)" />
                         <span style={{ fontFamily: 'var(--font-disp)', fontWeight: 700, fontSize: 16, color: 'var(--ink)',
-                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          textTransform: 'uppercase', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           vs Computer · {DIFF_LABEL[saved.difficulty]}
                         </span>
                       </div>
