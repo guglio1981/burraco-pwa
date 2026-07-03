@@ -37,6 +37,8 @@ export interface AppState {
   rematchStatus: RematchStatus;
   /** Partita congelata: un giocatore è assente/in background (timer fermo). */
   paused: boolean;
+  /** Perché è in pausa: 'away' = l'altro è in background/altra schermata; 'left' = ha sospeso. */
+  pauseReason: 'away' | 'left';
   /** Contatore: incrementa quando il server segnala che "Le mie partite" è cambiato
    *  (titolo modificato/cancellazione dall'altro giocatore) → forza il refresh. */
   gamesRev: number;
@@ -53,7 +55,7 @@ export interface AppState {
   setSuppressDeal: (v: boolean) => void;
   setRematchIncoming: (m: Mode | null) => void;
   setRematchStatus: (s: RematchStatus) => void;
-  setPaused: (v: boolean) => void;
+  setPaused: (v: boolean, reason?: 'away' | 'left') => void;
   bumpGamesRev: () => void;
   /** Notifica abbandono avversario: mostra popup solo se sono ancora in partita */
   notifyOpponentLeft: () => void;
@@ -73,6 +75,7 @@ export const useStore = create<AppState>((set, get) => ({
   rematchIncoming: null,
   rematchStatus: 'idle',
   paused: false,
+  pauseReason: 'away',
   gamesRev: 0,
 
   setScreen: (screen) => set({ screen }),
@@ -122,7 +125,7 @@ export const useStore = create<AppState>((set, get) => ({
   setSuppressDeal: (suppressDeal) => set({ suppressDeal }),
   setRematchIncoming: (rematchIncoming) => set({ rematchIncoming }),
   setRematchStatus: (rematchStatus) => set({ rematchStatus }),
-  setPaused: (paused) => set({ paused }),
+  setPaused: (paused, reason) => set(reason ? { paused, pauseReason: reason } : { paused }),
   bumpGamesRev: () => set((s) => ({ gamesRev: s.gamesRev + 1 })),
   notifyOpponentLeft: () => {
     const s = get().screen;

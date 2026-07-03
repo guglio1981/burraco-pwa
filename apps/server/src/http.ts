@@ -129,6 +129,7 @@ export function createApiRouter(hub: GameHub): Router {
         yourTurn: st ? st.turn === seat : false,
         myScore: liveScore(seat),
         oppScore: liveScore(seat === 'host' ? 'guest' : 'host'),
+        oppOnline: oppId ? hub.isUserOnline(oppId) : false,
         updatedAt: row.updated_at,
         expiresAt: row.expires_at,
       };

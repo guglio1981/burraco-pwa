@@ -717,8 +717,14 @@ export function TableScreen() {
             border: '3px solid rgba(255,255,255,0.18)', borderTopColor: 'var(--gold)' }} />
           <div style={{ fontFamily: 'var(--font-disp)', fontWeight: 800, fontSize: 22, color: '#fff' }}>Partita in pausa</div>
           <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.78)', maxWidth: 290, lineHeight: 1.45 }}>
-            In attesa che <b style={{ color: 'var(--gold)' }}>{oppName}</b> torni sulla partita.<br />
-            Il tempo è fermo: riprenderete da dove eravate.
+            {store.pauseReason === 'left' ? (
+              <><b style={{ color: 'var(--gold)' }}>{oppName.toUpperCase()}</b> ha sospeso la partita.<br />
+              Riprenderà quando tornerà su questa partita.</>
+            ) : (
+              <>In attesa che <b style={{ color: 'var(--gold)' }}>{oppName.toUpperCase()}</b> torni sulla partita<br />
+              (è momentaneamente su un'altra schermata o in background).</>
+            )}
+            <br />Il tempo è fermo: riprenderete da dove eravate.
           </div>
           <button className="btn btn-ghost" style={{ marginTop: 8 }} onClick={suspendToHome}>
             Sospendi e torna alla Home

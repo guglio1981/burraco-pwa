@@ -196,7 +196,7 @@ export function HomeScreen() {
         onRematchOffer: (m) => store.setRematchIncoming(m),
         onRematchDecline: () => store.setRematchStatus('declined'),
         onOpponentLeftRoom: () => { store.setRematchIncoming(null); store.setRematchStatus('left'); },
-        onPaused: (p) => store.setPaused(p),
+        onPaused: (p, reason) => store.setPaused(p, reason),
         onGamesChanged: () => store.bumpGamesRev(),
         onGameDeleted: () => { clearActiveRoom(); store.setRoom(null); store.setVsComputer(false); store.showToast('Partita cancellata'); store.setScreen('home'); },
       });
@@ -226,7 +226,7 @@ export function HomeScreen() {
         onRematchOffer: (m) => store.setRematchIncoming(m),
         onRematchDecline: () => store.setRematchStatus('declined'),
         onOpponentLeftRoom: () => { store.setRematchIncoming(null); store.setRematchStatus('left'); },
-        onPaused: (p) => store.setPaused(p),
+        onPaused: (p, reason) => store.setPaused(p, reason),
         onGamesChanged: () => store.bumpGamesRev(),
         onGameDeleted: () => { clearActiveRoom(); store.setRoom(null); store.setVsComputer(false); store.showToast('Partita cancellata'); store.setScreen('home'); },
       });
@@ -368,9 +368,13 @@ export function HomeScreen() {
                     <button onClick={() => resumeGame(g)} style={{ flex: 1, minWidth: 0, textAlign: 'left',
                       background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {g.oppOnline && (
+                          <span title="Avversario online" style={{ flexShrink: 0, width: 9, height: 9, borderRadius: '50%',
+                            background: 'var(--clean)', boxShadow: '0 0 0 3px rgba(108, 231, 161, 0.22)' }} />
+                        )}
                         <span style={{ fontFamily: 'var(--font-disp)', fontWeight: 700, fontSize: 16, color: 'var(--ink)',
                           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {g.title || `vs ${g.oppNick ?? 'Avversario'}`}
+                          {g.title || `vs ${(g.oppNick ?? 'Avversario').toUpperCase()}`}
                         </span>
                         {g.yourTurn && (
                           <span className="chip" style={{ flexShrink: 0, background: 'var(--gold-soft)', color: 'var(--gold)',
@@ -380,7 +384,7 @@ export function HomeScreen() {
                       <div style={{ fontSize: 12, color: 'var(--ink-mut)', marginTop: 3 }}>
                         {g.status === 'waiting'
                           ? 'In attesa dell’avversario'
-                          : <>{MODE_SHORT[g.mode]} · Manche {g.round} · {g.myScore}–{g.oppScore}{timeAgoIso(g.updatedAt) && ` · ${timeAgoIso(g.updatedAt)}`}</>}
+                          : <>{MODE_SHORT[g.mode]} · Manche {g.round} · {g.myScore}–{g.oppScore}{g.oppOnline ? ' · ' : ''}{g.oppOnline && <span style={{ color: 'var(--clean)', fontWeight: 700 }}>in linea</span>}{timeAgoIso(g.updatedAt) && ` · ${timeAgoIso(g.updatedAt)}`}</>}
                       </div>
                     </button>
                     <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
@@ -447,7 +451,7 @@ export function HomeScreen() {
             <input autoFocus value={renameText}
               onChange={(e) => setRenameText(e.target.value.slice(0, 60))}
               onKeyDown={(e) => { if (e.key === 'Enter') void saveRename(); }}
-              placeholder={`vs ${renaming.oppNick ?? 'Avversario'}`} maxLength={60}
+              placeholder={`vs ${(renaming.oppNick ?? 'Avversario').toUpperCase()}`} maxLength={60}
               style={{ width: '100%', boxSizing: 'border-box', background: 'rgba(36, 49, 44, 0.6)',
                 border: '1.5px solid var(--line)', borderRadius: 12, padding: '12px 14px',
                 color: 'var(--ink)', fontSize: 16, fontFamily: 'var(--font-ui)', outline: 'none' }} />

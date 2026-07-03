@@ -68,7 +68,7 @@ export function App() {
         onRematchOffer: (m) => store.setRematchIncoming(m),
         onRematchDecline: () => store.setRematchStatus('declined'),
         onOpponentLeftRoom: () => { store.setRematchIncoming(null); store.setRematchStatus('left'); },
-        onPaused: (p) => store.setPaused(p),
+        onPaused: (p, reason) => store.setPaused(p, reason),
         onGamesChanged: () => store.bumpGamesRev(),
         // partita cancellata (da me o dall'altro giocatore) → torna in Home
         onGameDeleted: () => {

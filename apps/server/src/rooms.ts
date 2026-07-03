@@ -152,11 +152,23 @@ export async function deleteOtherRoomsForPair(hostId: string, guestId: string, e
   return ids;
 }
 
-/** Titolo di default di una partita: "nome host vs nome guest". */
+/** Titolo di default di una partita: "NOME HOST vs NOME GUEST" (nomi in maiuscolo). */
 export async function defaultRoomTitle(room: RoomRow): Promise<string> {
   const host = await getUser(room.host_id);
   const guest = room.guest_id ? await getUser(room.guest_id) : null;
-  return `${host?.nick ?? 'Host'} vs ${guest?.nick ?? 'Avversario'}`;
+  return `${(host?.nick ?? 'Host').toUpperCase()} vs ${(guest?.nick ?? 'Avversario').toUpperCase()}`;
+}
+
+/** id degli avversari nelle partite in corso dell'utente (per notificare la sua
+ *  presenza online/offline a chi ha una partita con lui). */
+export async function listPartnerIds(userId: string): Promise<string[]> {
+  const r = await query<{ other: string | null }>(
+    `SELECT DISTINCT CASE WHEN host_id = $1 THEN guest_id ELSE host_id END AS other
+       FROM rooms
+      WHERE (host_id = $1 OR guest_id = $1) AND status <> 'finished' AND guest_id IS NOT NULL`,
+    [userId],
+  );
+  return r.rows.map((x) => x.other).filter((x): x is string => !!x);
 }
 
 /** Rinomina la partita (consentito a entrambi i giocatori). Se il titolo è vuoto

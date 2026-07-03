@@ -51,7 +51,7 @@ export function VictoryScreen() {
   const view = store.gameView;
   const user = store.user;
   const oppUser = store.room ? (store.room.host?.id === user?.id ? store.room.guest : store.room.host) : null;
-  const oppName = gameClient.isLocal ? 'Computer' : (oppUser?.nick ?? 'Avversario');
+  const oppName = (gameClient.isLocal ? 'Computer' : (oppUser?.nick ?? 'Avversario')).toUpperCase();
 
   // tipo selezionato per (ri)proporre la rivincita — default = tipo della partita appena finita
   const [offerMode, setOfferMode] = useState<Mode>(view?.mode ?? '1005');

@@ -8,7 +8,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import type { GameState, Seat, Move, Mode } from '@burraco/shared';
 import { buildView, TURN_MS, otherSeat } from '@burraco/shared';
 import { verifyToken, getUser } from './auth.js';
-import { getRoom, roomView, seatOf } from './rooms.js';
+import { getRoom, roomView, seatOf, listPartnerIds } from './rooms.js';
 import { applyMoveTx, applyTimeoutTx, nextRoundTx, abandonTx, rematchTx, resumeTurnTx, loadGame } from './game.js';
 import { sendPush } from './push.js';
 import { ENV } from './env.js';
@@ -74,21 +74,40 @@ export class GameHub {
         send(ws, { t: 'error', error: e instanceof Error ? e.message : 'Errore interno' });
       });
     });
-    ws.on('close', () => { this.detach(conn); this.removeFromByUser(conn); });
+    ws.on('close', () => {
+      this.detach(conn);
+      const uid = conn.userId;
+      const wentOffline = this.removeFromByUser(conn);
+      if (wentOffline && uid) void this.notifyPartnersPresence(uid);
+    });
   }
 
-  private addToByUser(conn: Conn): void {
-    if (!conn.userId) return;
+  /** Aggiunge la connessione; ritorna true se l'utente era OFFLINE prima (ora online). */
+  private addToByUser(conn: Conn): boolean {
+    if (!conn.userId) return false;
     let set = this.byUser.get(conn.userId);
+    const wasOffline = !set || set.size === 0;
     if (!set) { set = new Set(); this.byUser.set(conn.userId, set); }
     set.add(conn);
+    return wasOffline;
   }
 
-  private removeFromByUser(conn: Conn): void {
-    if (!conn.userId) return;
+  /** Rimuove la connessione; ritorna true se l'utente è ora OFFLINE (nessuna conn). */
+  private removeFromByUser(conn: Conn): boolean {
+    if (!conn.userId) return false;
     const set = this.byUser.get(conn.userId);
     set?.delete(conn);
-    if (set && set.size === 0) this.byUser.delete(conn.userId);
+    if (set && set.size === 0) { this.byUser.delete(conn.userId); return true; }
+    return false;
+  }
+
+  /** L'utente è passato online/offline → avvisa i suoi avversari di ri-aggiornare
+   *  l'elenco "Le mie partite" (per l'indicatore di presenza in tempo reale). */
+  private async notifyPartnersPresence(userId: string): Promise<void> {
+    try {
+      const partners = await listPartnerIds(userId);
+      for (const p of partners) this.notifyGamesChanged(p);
+    } catch { /* best-effort */ }
   }
 
   /** Invia un payload a TUTTE le connessioni di un utente (anche se in Home). */
@@ -140,17 +159,29 @@ export class GameHub {
       if (out.status === 'ok') this.broadcastState(roomId, out.state);
       this.broadcastPaused(roomId, false);
     } else {
-      // manca un giocatore → partita CONGELATA: timer fermo, niente timeout
+      // manca un giocatore → partita CONGELATA: timer fermo, niente timeout.
+      // motivo: se l'altro è ancora nella stanza ma non attivo → 'away' (background/
+      // cambio schermata); se non è più presente → 'left' (ha sospeso col bottone o
+      // ha chiuso l'app).
       this.timers.clear(roomId);
-      this.broadcastPaused(roomId, true);
+      const bothPresent = this.seatPresent(roomId, 'host') && this.seatPresent(roomId, 'guest');
+      this.broadcastPaused(roomId, true, bothPresent ? 'away' : 'left');
     }
   }
 
-  /** Comunica ai client se la partita è in pausa (un giocatore assente/in background). */
-  private broadcastPaused(roomId: string, paused: boolean): void {
+  /** C'è una connessione per questo seat nella stanza (a prescindere dall'essere attivo)? */
+  private seatPresent(roomId: string, seat: Seat): boolean {
+    const set = this.rooms.get(roomId);
+    if (!set) return false;
+    for (const c of set) if (c.seat === seat) return true;
+    return false;
+  }
+
+  /** Comunica ai client se la partita è in pausa e perché. */
+  private broadcastPaused(roomId: string, paused: boolean, reason?: 'away' | 'left'): void {
     const set = this.rooms.get(roomId);
     if (!set) return;
-    for (const c of set) if (c.seat) send(c.ws, { t: 'paused', paused });
+    for (const c of set) if (c.seat) send(c.ws, { t: 'paused', paused, reason });
   }
 
   private async onMessage(conn: Conn, msg: ClientMsg): Promise<void> {
@@ -158,7 +189,8 @@ export class GameHub {
       case 'auth': {
         conn.userId = verifyToken(msg.token);
         if (!conn.userId) return send(conn.ws, { t: 'error', error: 'Token non valido' });
-        this.addToByUser(conn); // ora raggiungibile per notifiche personali (anche in Home)
+        const cameOnline = this.addToByUser(conn); // raggiungibile per notifiche (anche in Home)
+        if (cameOnline) void this.notifyPartnersPresence(conn.userId); // presenza online → avvisa i compagni
         return send(conn.ws, { t: 'hello' });
       }
       case 'subscribe':
@@ -402,6 +434,12 @@ export class GameHub {
    *  "Le mie partite" è cambiato (titolo modificato, partita cancellata, ecc.). */
   notifyGamesChanged(userId: string): void {
     this.notifyUser(userId, { t: 'games_changed' });
+  }
+
+  /** L'utente ha almeno una connessione WS aperta (app aperta)? */
+  isUserOnline(userId: string): boolean {
+    const set = this.byUser.get(userId);
+    return !!set && set.size > 0;
   }
 
   /** Notifica l'avvio della partita: invia stato + stanza e arma il timer. */

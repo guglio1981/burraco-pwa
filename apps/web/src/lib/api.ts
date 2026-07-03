@@ -35,7 +35,7 @@ export interface RoomView {
 export interface MyGame {
   id: string; code: string; title: string | null; mode: string; status: string;
   oppNick: string | null; round: number; phase: string | null;
-  yourTurn: boolean; myScore: number; oppScore: number;
+  yourTurn: boolean; myScore: number; oppScore: number; oppOnline: boolean;
   updatedAt: string | null; expiresAt: string;
 }
 
