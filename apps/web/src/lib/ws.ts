@@ -20,9 +20,9 @@ export type WsHandler = {
   onOpponentLeftRoom?: () => void;
   /** La partita è stata cancellata (da me o dall'altro giocatore). */
   onGameDeleted?: () => void;
-  /** La partita è in pausa (un giocatore è assente/in background) o è ripresa.
-   *  reason: 'away' = l'altro è in background/altra schermata; 'left' = ha sospeso/uscito. */
-  onPaused?: (paused: boolean, reason?: 'away' | 'left') => void;
+  /** La partita è in pausa (un giocatore non è su questa partita) o è ripresa.
+   *  reason: 'away' = l'altro è online ma non qui; 'offline' = disconnesso; 'suspended' = ha usato il bottone. */
+  onPaused?: (paused: boolean, reason?: 'suspended' | 'away' | 'offline') => void;
   /** L'elenco "Le mie partite" è cambiato (l'altro giocatore ha rinominato/cancellato). */
   onGamesChanged?: () => void;
 };
@@ -37,7 +37,7 @@ interface ServerMsg {
   seat?: Seat;
   mode?: Mode;
   paused?: boolean;
-  reason?: 'away' | 'left';
+  reason?: 'suspended' | 'away' | 'offline';
 }
 
 export class BurracoWS {

@@ -37,8 +37,8 @@ export interface AppState {
   rematchStatus: RematchStatus;
   /** Partita congelata: un giocatore è assente/in background (timer fermo). */
   paused: boolean;
-  /** Perché è in pausa: 'away' = l'altro è in background/altra schermata; 'left' = ha sospeso. */
-  pauseReason: 'away' | 'left';
+  /** Perché è in pausa: 'away' = online ma non qui; 'offline' = disconnesso; 'suspended' = ha usato il bottone. */
+  pauseReason: 'suspended' | 'away' | 'offline';
   /** Contatore: incrementa quando il server segnala che "Le mie partite" è cambiato
    *  (titolo modificato/cancellazione dall'altro giocatore) → forza il refresh. */
   gamesRev: number;
@@ -55,7 +55,7 @@ export interface AppState {
   setSuppressDeal: (v: boolean) => void;
   setRematchIncoming: (m: Mode | null) => void;
   setRematchStatus: (s: RematchStatus) => void;
-  setPaused: (v: boolean, reason?: 'away' | 'left') => void;
+  setPaused: (v: boolean, reason?: 'suspended' | 'away' | 'offline') => void;
   bumpGamesRev: () => void;
   /** Notifica abbandono avversario: mostra popup solo se sono ancora in partita */
   notifyOpponentLeft: () => void;

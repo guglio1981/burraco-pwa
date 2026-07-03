@@ -716,15 +716,18 @@ export function TableScreen() {
           <div className="b-spin" style={{ width: 34, height: 34, borderRadius: '50%',
             border: '3px solid rgba(255,255,255,0.18)', borderTopColor: 'var(--gold)' }} />
           <div style={{ fontFamily: 'var(--font-disp)', fontWeight: 800, fontSize: 22, color: '#fff' }}>
-            {store.pauseReason === 'left' ? 'Partita sospesa' : 'Partita in pausa'}
+            {store.pauseReason === 'away' ? 'Partita in pausa' : 'Partita sospesa'}
           </div>
           <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.78)', maxWidth: 290, lineHeight: 1.45 }}>
-            {store.pauseReason === 'left' ? (
+            {store.pauseReason === 'suspended' ? (
               <><b style={{ color: 'var(--gold)' }}>{oppName.toUpperCase()}</b> ha sospeso la partita.<br />
               Riprenderà quando tornerà su questa partita.</>
+            ) : store.pauseReason === 'offline' ? (
+              <><b style={{ color: 'var(--gold)' }}>{oppName.toUpperCase()}</b> si è disconnesso.<br />
+              Riprenderà quando tornerà su questa partita.</>
             ) : (
-              <>In attesa che <b style={{ color: 'var(--gold)' }}>{oppName.toUpperCase()}</b> torni sulla partita<br />
-              (è momentaneamente su un'altra schermata o in background).</>
+              <><b style={{ color: 'var(--gold)' }}>{oppName.toUpperCase()}</b> è online ma non su questa partita.<br />
+              In attesa che torni.</>
             )}
             <br />Il tempo è fermo: riprenderete da dove eravate.
           </div>
