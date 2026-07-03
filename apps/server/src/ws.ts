@@ -14,6 +14,8 @@ import { sendPush } from './push.js';
 import { ENV } from './env.js';
 
 const VALID_MODES: ReadonlySet<Mode> = new Set(['fast', '1005', '2005']);
+// dopo quanto un'assenza "away" (background/rete caduta) diventa "left" (sospesa)
+const AWAY_ESCALATE_MS = 12_000;
 // URL del frontend per i deep-link delle notifiche (in locale punta comunque alla PWA online)
 const FRONTEND_ORIGIN = ENV.CLIENT_ORIGIN.startsWith('http://localhost')
   ? 'https://burraco-pwa-server.vercel.app'
@@ -58,6 +60,9 @@ export class GameHub {
    *  per distinguere la SOSPENSIONE (left) dalla semplice pausa/background (away).
    *  Una sparizione qualsiasi (background, chiusura, rete) NON entra qui. */
   private explicitLeaves = new Map<string, Set<Seat>>();
+  /** Timer per "promuovere" una pausa (away) a sospensione (left) se l'assenza si
+   *  prolunga: background breve resta pausa, app chiusa/assenza lunga → sospesa. */
+  private awayEscalate = new Map<string, ReturnType<typeof setTimeout>>();
   private timers = new TurnTimers();
 
   constructor(server: Server) {
@@ -130,6 +135,7 @@ export class GameHub {
         this.rooms.delete(roomId);
         this.timers.clear(roomId);
         this.explicitLeaves.delete(roomId);
+        this.clearAwayEscalate(roomId);
       } else if (set) {
         // un giocatore è uscito/disconnesso → chi resta va in pausa (timer fermo + overlay)
         void this.onPresenceChange(roomId);
@@ -160,21 +166,53 @@ export class GameHub {
     if (!live) { this.timers.clear(roomId); return; }
     if (this.bothActive(roomId)) {
       // entrambi presenti → riparte il turno (60s puliti) e la partita si sblocca
+      this.clearAwayEscalate(roomId);
       const out = await resumeTurnTx(roomId);
       if (out.status === 'ok') this.broadcastState(roomId, out.state);
       this.broadcastPaused(roomId, false);
     } else {
       // manca un giocatore → partita CONGELATA: timer fermo, niente timeout.
-      // motivo 'left' (SOSPESA) SOLO se il seat mancante ha usato il bottone
-      // "Sospendi" (uscita esplicita registrata); qualsiasi altra sparizione
-      // (background, chiusura, rete che cade) resta 'away' (PAUSA).
+      // motivo 'left' (SOSPESA) se il seat mancante ha usato il bottone "Sospendi"
+      // (uscita esplicita); altrimenti 'away' (PAUSA) per background/chiusura/rete.
+      // Se l'assenza si prolunga oltre AWAY_ESCALATE_MS, la pausa diventa sospesa.
       this.timers.clear(roomId);
       const left = this.explicitLeaves.get(roomId);
       const hostGone = !this.seatActive(roomId, 'host');
       const guestGone = !this.seatActive(roomId, 'guest');
       const explicit = (hostGone && left?.has('host')) || (guestGone && left?.has('guest'));
-      this.broadcastPaused(roomId, true, explicit ? 'left' : 'away');
+      if (explicit) {
+        this.clearAwayEscalate(roomId);
+        this.broadcastPaused(roomId, true, 'left');
+      } else {
+        this.broadcastPaused(roomId, true, 'away');
+        this.armAwayEscalate(roomId);
+      }
     }
+  }
+
+  /** Programma la promozione pausa→sospesa se l'assenza si prolunga. */
+  private armAwayEscalate(roomId: string): void {
+    this.clearAwayEscalate(roomId);
+    const t = setTimeout(() => {
+      this.awayEscalate.delete(roomId);
+      void (async () => {
+        const game = await loadGame(roomId);
+        if (!game) return;
+        const live = game.state.phase === 'draw' || game.state.phase === 'play';
+        if (!live || this.bothActive(roomId)) return; // finita o ripresa nel frattempo
+        // assenza prolungata: tratto i seat assenti come "usciti" → sospesa STABILE
+        // (non torna a pausa se la connessione cade dopo). Ripulito al rientro.
+        if (!this.seatActive(roomId, 'host')) this.markExplicitLeave(roomId, 'host');
+        if (!this.seatActive(roomId, 'guest')) this.markExplicitLeave(roomId, 'guest');
+        this.broadcastPaused(roomId, true, 'left');
+      })();
+    }, AWAY_ESCALATE_MS);
+    this.awayEscalate.set(roomId, t);
+  }
+
+  private clearAwayEscalate(roomId: string): void {
+    const t = this.awayEscalate.get(roomId);
+    if (t) { clearTimeout(t); this.awayEscalate.delete(roomId); }
   }
 
   /** Registra un'uscita esplicita (bottone Sospendi) di un seat da una stanza. */
@@ -271,6 +309,8 @@ export class GameHub {
   /** Il client segnala primo piano/background: aggiorna la presenza e (ri)valuta il timer. */
   private async handlePresence(conn: Conn, active: boolean): Promise<void> {
     conn.active = active;
+    // tornato in primo piano → non è più "sospeso" da lui (annulla eventuale escalation)
+    if (active && conn.roomId && conn.seat) this.explicitLeaves.get(conn.roomId)?.delete(conn.seat);
     if (conn.roomId) await this.onPresenceChange(conn.roomId);
   }
 
