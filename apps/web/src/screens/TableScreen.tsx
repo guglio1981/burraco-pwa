@@ -715,7 +715,9 @@ export function TableScreen() {
           justifyContent: 'center', gap: 14, padding: 26, textAlign: 'center' }}>
           <div className="b-spin" style={{ width: 34, height: 34, borderRadius: '50%',
             border: '3px solid rgba(255,255,255,0.18)', borderTopColor: 'var(--gold)' }} />
-          <div style={{ fontFamily: 'var(--font-disp)', fontWeight: 800, fontSize: 22, color: '#fff' }}>Partita in pausa</div>
+          <div style={{ fontFamily: 'var(--font-disp)', fontWeight: 800, fontSize: 22, color: '#fff' }}>
+            {store.pauseReason === 'left' ? 'Partita sospesa' : 'Partita in pausa'}
+          </div>
           <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.78)', maxWidth: 290, lineHeight: 1.45 }}>
             {store.pauseReason === 'left' ? (
               <><b style={{ color: 'var(--gold)' }}>{oppName.toUpperCase()}</b> ha sospeso la partita.<br />
