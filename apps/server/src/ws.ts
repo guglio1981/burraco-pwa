@@ -54,6 +54,10 @@ export class GameHub {
   /** Connessioni per utente (anche fuori da una stanza, es. in Home): serve per
    *  notifiche "personali" come l'aggiornamento dell'elenco "Le mie partite". */
   private byUser = new Map<string, Set<Conn>>();
+  /** Seat che hanno lasciato la partita ESPLICITAMENTE (bottone "Sospendi"),
+   *  per distinguere la SOSPENSIONE (left) dalla semplice pausa/background (away).
+   *  Una sparizione qualsiasi (background, chiusura, rete) NON entra qui. */
+  private explicitLeaves = new Map<string, Set<Seat>>();
   private timers = new TurnTimers();
 
   constructor(server: Server) {
@@ -125,6 +129,7 @@ export class GameHub {
       if (set && set.size === 0) {
         this.rooms.delete(roomId);
         this.timers.clear(roomId);
+        this.explicitLeaves.delete(roomId);
       } else if (set) {
         // un giocatore è uscito/disconnesso → chi resta va in pausa (timer fermo + overlay)
         void this.onPresenceChange(roomId);
@@ -160,13 +165,23 @@ export class GameHub {
       this.broadcastPaused(roomId, false);
     } else {
       // manca un giocatore → partita CONGELATA: timer fermo, niente timeout.
-      // motivo: se l'altro è ancora nella stanza ma non attivo → 'away' (background/
-      // cambio schermata); se non è più presente → 'left' (ha sospeso col bottone o
-      // ha chiuso l'app).
+      // motivo 'left' (SOSPESA) SOLO se il seat mancante ha usato il bottone
+      // "Sospendi" (uscita esplicita registrata); qualsiasi altra sparizione
+      // (background, chiusura, rete che cade) resta 'away' (PAUSA).
       this.timers.clear(roomId);
-      const bothPresent = this.seatPresent(roomId, 'host') && this.seatPresent(roomId, 'guest');
-      this.broadcastPaused(roomId, true, bothPresent ? 'away' : 'left');
+      const left = this.explicitLeaves.get(roomId);
+      const hostGone = !this.seatActive(roomId, 'host');
+      const guestGone = !this.seatActive(roomId, 'guest');
+      const explicit = (hostGone && left?.has('host')) || (guestGone && left?.has('guest'));
+      this.broadcastPaused(roomId, true, explicit ? 'left' : 'away');
     }
+  }
+
+  /** Registra un'uscita esplicita (bottone Sospendi) di un seat da una stanza. */
+  private markExplicitLeave(roomId: string, seat: Seat): void {
+    let set = this.explicitLeaves.get(roomId);
+    if (!set) { set = new Set(); this.explicitLeaves.set(roomId, set); }
+    set.add(seat);
   }
 
   /** C'è una connessione per questo seat nella stanza (a prescindere dall'essere attivo)? */
@@ -196,7 +211,10 @@ export class GameHub {
       case 'subscribe':
         return this.subscribe(conn, msg.roomId);
       case 'unsubscribe': {
-        // esco dalla partita mantenendola salvata: mi stacco dalla stanza (chi resta va in pausa)
+        // esco dalla partita mantenendola salvata: mi stacco dalla stanza (chi resta va in pausa).
+        // Questa è un'uscita ESPLICITA (bottone Sospendi) → la registro, così chi resta vede
+        // "Partita sospesa" e non "in pausa".
+        if (conn.roomId && conn.seat) this.markExplicitLeave(conn.roomId, conn.seat);
         this.detach(conn);
         conn.roomId = null;
         conn.seat = null;
@@ -236,6 +254,7 @@ export class GameHub {
     conn.roomId = roomId;
     conn.seat = seat;
     conn.active = true; // una nuova sottoscrizione parte sempre "in primo piano"
+    this.explicitLeaves.get(roomId)?.delete(seat); // è tornato → non è più "sospeso" da lui
     let set = this.rooms.get(roomId);
     if (!set) {
       set = new Set();
