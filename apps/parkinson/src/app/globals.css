@@ -1,0 +1,728 @@
+/*
+  Il pubblico di questo sito ha il Parkinson: tremore, precisione ridotta,
+  spesso vista stanca. Ogni regola qui sotto nasce da lì.
+  I rapporti di contrasto sono verificati: tutte le combinazioni usate
+  superano 7:1, cioè WCAG AAA per il testo normale.
+*/
+
+:root {
+  /* Colori */
+  --carta: #ffffff;
+  --carta-tenue: #f4f2ed;
+  --inchiostro: #1b1b1b; /* 17.2:1 su carta */
+  --inchiostro-tenue: #45484d; /* 9.2:1 su carta */
+  --accento: #14524b; /* 9.0:1 su carta */
+  --accento-scuro: #0e3d38; /* 12.1:1 su carta */
+  --azione: #a32b1c; /* bianco sopra: 7.2:1 */
+  --azione-scuro: #8a2317; /* bianco sopra: 9.0:1 */
+  --evidenza: #fff4d6;
+  --bordo: #c9c5bc;
+
+  /* Misure. Tutto in rem: se l'utente ingrandisce il testo, cresce tutto. */
+  --misura-testo: 65ch; /* circa 70 caratteri per riga */
+  --spazio-xs: 0.5rem;
+  --spazio-s: 0.75rem;
+  --spazio-m: 1.25rem;
+  --spazio-l: 2rem;
+  --spazio-xl: 3rem;
+  --raggio: 0.5rem;
+
+  /* Un bersaglio non scende mai sotto 48px, nemmeno se il testo è piccolo. */
+  --bersaglio: max(3rem, 48px);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/*
+  L'attributo hidden deve vincere su tutto. Serve davvero: .pulsante imposta
+  display:inline-flex, che ha più peso della regola di default del browser
+  per [hidden]. Senza questa riga il pulsante "Copia" resterebbe visibile
+  anche a chi ha JavaScript spento o un browser senza navigator.clipboard,
+  e sarebbe un pulsante che non fa niente.
+*/
+[hidden] {
+  display: none !important;
+}
+
+html {
+  /*
+    Percentuale e non pixel: parte dalla dimensione scelta dall'utente
+    nel browser e la aumenta. Con l'impostazione di fabbrica fa 20px.
+    Fissarla in px cancellerebbe la scelta di chi ha già ingrandito tutto.
+  */
+  font-size: 125%;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--carta);
+  color: var(--inchiostro);
+  /* Caratteri di sistema: zero byte da scaricare su una connessione lenta. */
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 1rem; /* 20px */
+  line-height: 1.6;
+  text-rendering: optimizeLegibility;
+}
+
+/* --- Titoli: gerarchia netta, non solo "più grande" --- */
+
+h1,
+h2,
+h3 {
+  line-height: 1.2;
+  text-wrap: balance;
+  margin: 0 0 var(--spazio-m);
+  color: var(--inchiostro);
+}
+
+h1 {
+  font-size: 2rem;
+  letter-spacing: -0.01em;
+}
+
+h2 {
+  font-size: 1.5rem;
+  margin-top: var(--spazio-xl);
+  padding-top: var(--spazio-s);
+  border-top: 3px solid var(--accento);
+}
+
+h3 {
+  font-size: 1.2rem;
+  margin-top: var(--spazio-l);
+}
+
+p,
+li {
+  margin: 0 0 var(--spazio-m);
+  text-wrap: pretty;
+}
+
+/* --- Link: sempre sottolineati, mai riconoscibili dal solo colore --- */
+
+a {
+  color: var(--accento);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: 0.09em;
+}
+
+a:hover {
+  color: var(--accento-scuro);
+  text-decoration-thickness: 0.16em;
+}
+
+/*
+  Focus: spesso questo sito si usa da tastiera, o con il dito che trema
+  e tocca accanto. Il contorno deve essere impossibile da non vedere.
+  Due anelli, così si stacca sia dal chiaro sia dallo scuro.
+*/
+:focus-visible {
+  outline: 4px solid var(--inchiostro);
+  outline-offset: 3px;
+  border-radius: 2px;
+  box-shadow: 0 0 0 3px var(--carta);
+}
+
+/* --- Impalcatura --- */
+
+.contenitore {
+  width: 100%;
+  max-width: 62rem;
+  margin: 0 auto;
+  padding: 0 var(--spazio-m);
+}
+
+/* Le pagine interne sono a colonna singola, larghe quanto si legge bene. */
+.colonna {
+  max-width: var(--misura-testo);
+}
+
+.salta-al-contenuto {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--inchiostro);
+  color: var(--carta);
+  padding: var(--spazio-s) var(--spazio-m);
+  z-index: 10;
+}
+
+.salta-al-contenuto:focus {
+  left: var(--spazio-m);
+  top: var(--spazio-xs);
+}
+
+/* --- Intestazione: menu sempre in vista, mai a scomparsa --- */
+
+.intestazione {
+  border-bottom: 3px solid var(--bordo);
+  background: var(--carta);
+  padding: var(--spazio-s) 0;
+}
+
+.intestazione__riga {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spazio-s) var(--spazio-m);
+}
+
+.marchio {
+  display: inline-flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: var(--inchiostro);
+  padding: var(--spazio-xs) 0;
+  min-height: var(--bersaglio);
+  justify-content: center;
+}
+
+.marchio:hover {
+  color: var(--inchiostro);
+}
+
+.marchio__nome {
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.marchio__luogo {
+  font-size: 0.8rem;
+  color: var(--inchiostro-tenue);
+}
+
+/*
+  Navigazione: una lista di link veri.
+  Su desktop resta sempre visibile; su telefono diventa un elenco
+  verticale a un livello. Niente hamburger, niente sottomenu, niente hover.
+*/
+.navigazione ul {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spazio-xs);
+  margin: 0;
+  padding: 0;
+}
+
+.navigazione li {
+  margin: 0;
+}
+
+/* Misure: valgono per tutte le voci, pulsante compreso. */
+.navigazione a {
+  display: flex;
+  align-items: center;
+  min-height: var(--bersaglio);
+  padding: var(--spazio-xs) var(--spazio-m);
+  border-radius: var(--raggio);
+  text-decoration: none;
+  font-weight: 600;
+  border: 2px solid transparent;
+}
+
+/*
+  I colori invece solo alle voci normali. Senza :not(.pulsante) queste
+  regole avrebbero più peso di .pulsante--principale e avrebbero riscritto
+  il colore del pulsante Sostienici: testo scuro su rosso, contrasto 2,4:1.
+*/
+.navigazione a:not(.pulsante) {
+  color: var(--inchiostro);
+}
+
+.navigazione a:not(.pulsante):hover {
+  background: var(--carta-tenue);
+  color: var(--inchiostro);
+}
+
+.navigazione a:not(.pulsante)[aria-current='page'] {
+  color: var(--accento-scuro);
+  border-color: var(--accento);
+  background: var(--carta-tenue);
+}
+
+/* Il pulsante resta rosso anche sulla sua pagina: lo segnaliamo col bordo. */
+.navigazione a.pulsante[aria-current='page'] {
+  border-color: var(--inchiostro);
+}
+
+/* --- Pulsanti --- */
+
+.pulsante,
+button.pulsante {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spazio-xs);
+  min-height: var(--bersaglio);
+  min-width: var(--bersaglio);
+  padding: var(--spazio-s) var(--spazio-l);
+  border-radius: var(--raggio);
+  border: 2px solid transparent;
+  font: inherit;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.pulsante--principale {
+  background: var(--azione);
+  color: var(--carta);
+}
+
+.pulsante--principale:hover {
+  background: var(--azione-scuro);
+  color: var(--carta);
+}
+
+.pulsante--secondario {
+  background: var(--carta);
+  color: var(--accento-scuro);
+  border-color: var(--accento);
+}
+
+.pulsante--secondario:hover {
+  background: var(--carta-tenue);
+  color: var(--accento-scuro);
+}
+
+/*
+  Telefono ed email sono i bersagli più importanti del sito: chi chiama
+  spesso lo fa con la mano che trema. Li portiamo sempre a 48 px di altezza,
+  insieme ai link che stanno da soli su una riga (.link-grande).
+  I link dentro una frase restano come sono: allargarli farebbe sovrapporre
+  le aree cliccabili di due righe vicine, e si toccherebbe quello sbagliato.
+*/
+a[href^='tel:'],
+a[href^='mailto:'],
+.link-grande {
+  display: inline-block;
+  min-height: var(--bersaglio);
+  padding: 0.55rem 0;
+}
+
+/* Fra due bersagli c'è sempre spazio: un dito che trema non deve sbagliare. */
+.gruppo-pulsanti {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spazio-m);
+  margin-bottom: var(--spazio-m);
+}
+
+/* --- Sezioni --- */
+
+.sezione {
+  padding: var(--spazio-xl) 0;
+}
+
+.sezione--tenue {
+  background: var(--carta-tenue);
+  border-top: 1px solid var(--bordo);
+  border-bottom: 1px solid var(--bordo);
+}
+
+.sezione > .contenitore > h2:first-child {
+  margin-top: 0;
+}
+
+/* --- Schede --- */
+
+.scheda {
+  background: var(--carta);
+  border: 2px solid var(--bordo);
+  border-radius: var(--raggio);
+  padding: var(--spazio-m);
+  margin-bottom: var(--spazio-m);
+}
+
+.scheda h3 {
+  margin-top: 0;
+}
+
+.scheda__dati {
+  margin: 0 0 var(--spazio-m);
+}
+
+.scheda__dati div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--spazio-xs);
+  padding: 0.15rem 0;
+}
+
+.scheda__dati dt {
+  font-weight: 700;
+  min-width: 7.5rem;
+}
+
+.scheda__dati dd {
+  margin: 0;
+}
+
+.elenco-pulito {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* --- Dati da copiare: codice fiscale, IBAN --- */
+
+.dato-copiabile {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spazio-m);
+  margin-bottom: var(--spazio-m);
+}
+
+.dato-copiabile__valore {
+  font-family: ui-monospace, 'SFMono-Regular', 'Cascadia Mono', Menlo, Consolas, monospace;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  background: var(--evidenza);
+  border: 2px solid var(--bordo);
+  border-radius: var(--raggio);
+  padding: var(--spazio-s) var(--spazio-m);
+  /* Un IBAN lungo va a capo invece di sfondare lo schermo del telefono. */
+  overflow-wrap: anywhere;
+}
+
+/* --- Calendario della settimana --- */
+
+.settimana {
+  display: grid;
+  gap: var(--spazio-m);
+  grid-template-columns: 1fr;
+}
+
+.giorno {
+  border: 2px solid var(--bordo);
+  border-radius: var(--raggio);
+  padding: var(--spazio-m);
+  background: var(--carta);
+}
+
+.giorno--oggi {
+  border-color: var(--accento);
+  border-width: 3px;
+  background: var(--evidenza);
+}
+
+.giorno__titolo {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0 0 var(--spazio-s);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--spazio-xs);
+}
+
+.giorno__oggi {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: var(--accento);
+  color: var(--carta);
+  border-radius: var(--raggio);
+  padding: 0.15rem 0.6rem;
+}
+
+.giorno__vuoto {
+  color: var(--inchiostro-tenue);
+  margin: 0;
+}
+
+.appuntamento {
+  border-top: 1px solid var(--bordo);
+  padding: var(--spazio-s) 0;
+}
+
+.appuntamento:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.appuntamento:last-child {
+  padding-bottom: 0;
+}
+
+.appuntamento a {
+  display: block;
+  min-height: var(--bersaglio);
+  padding: var(--spazio-xs) 0;
+  font-weight: 700;
+}
+
+.appuntamento__quando {
+  display: block;
+  font-weight: 400;
+  color: var(--inchiostro-tenue);
+  font-size: 0.9rem;
+}
+
+/* --- Filtro per giorno: link normali, funziona senza JavaScript --- */
+
+.filtro {
+  margin-bottom: var(--spazio-l);
+}
+
+.filtro__voci {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spazio-s);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.filtro__voci a {
+  display: flex;
+  align-items: center;
+  min-height: var(--bersaglio);
+  padding: var(--spazio-xs) var(--spazio-m);
+  border: 2px solid var(--accento);
+  border-radius: var(--raggio);
+  text-decoration: none;
+  font-weight: 600;
+  color: var(--accento-scuro);
+}
+
+.filtro__voci a[aria-current='true'] {
+  background: var(--accento);
+  color: var(--carta);
+}
+
+.filtro__voci a:hover {
+  background: var(--carta-tenue);
+  color: var(--accento-scuro);
+}
+
+.filtro__voci a[aria-current='true']:hover {
+  background: var(--accento-scuro);
+  color: var(--carta);
+}
+
+/* --- Modulo contatti --- */
+
+.campo {
+  margin-bottom: var(--spazio-l);
+}
+
+.campo label {
+  display: block;
+  font-weight: 700;
+  margin-bottom: var(--spazio-xs);
+}
+
+.campo input,
+.campo textarea {
+  width: 100%;
+  font: inherit;
+  min-height: var(--bersaglio);
+  padding: var(--spazio-s);
+  border: 2px solid var(--inchiostro-tenue);
+  border-radius: var(--raggio);
+  background: var(--carta);
+  color: var(--inchiostro);
+}
+
+.campo textarea {
+  min-height: 9rem;
+  resize: vertical;
+}
+
+.campo__aiuto {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--inchiostro-tenue);
+  margin-top: var(--spazio-xs);
+}
+
+/* Trappola per i robot che compilano i moduli. Nascosta anche agli screen reader. */
+.trappola {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.avviso {
+  border: 2px solid var(--accento);
+  border-left-width: 8px;
+  background: var(--carta-tenue);
+  border-radius: var(--raggio);
+  padding: var(--spazio-m);
+  margin-bottom: var(--spazio-l);
+}
+
+.avviso--errore {
+  border-color: var(--azione);
+}
+
+.avviso :last-child {
+  margin-bottom: 0;
+}
+
+.avviso-bozza {
+  background: var(--evidenza);
+  border-bottom: 2px solid var(--bordo);
+  padding: var(--spazio-s) 0;
+  font-size: 0.9rem;
+}
+
+.avviso-bozza p {
+  margin: 0;
+}
+
+/* --- Mappa --- */
+
+.mappa {
+  border: 2px solid var(--bordo);
+  border-radius: var(--raggio);
+  width: 100%;
+  height: 20rem;
+  max-height: 60vh;
+  display: block;
+}
+
+/* --- Piede: il blocco contatti si ripete in fondo a ogni pagina --- */
+
+.piede {
+  background: var(--carta-tenue);
+  border-top: 3px solid var(--bordo);
+  padding: var(--spazio-xl) 0 var(--spazio-l);
+  margin-top: var(--spazio-xl);
+}
+
+.piede__colonne {
+  display: grid;
+  gap: var(--spazio-l);
+  grid-template-columns: 1fr;
+}
+
+.piede h2 {
+  font-size: 1.25rem;
+  margin-top: 0;
+  border-top: 0;
+  padding-top: 0;
+}
+
+.piede a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--bersaglio);
+  padding: var(--spazio-xs) 0;
+}
+
+.piede__legale {
+  border-top: 1px solid var(--bordo);
+  margin-top: var(--spazio-l);
+  padding-top: var(--spazio-m);
+  font-size: 0.85rem;
+  color: var(--inchiostro-tenue);
+}
+
+.piede__legale p {
+  margin-bottom: var(--spazio-xs);
+}
+
+.testo-di-servizio {
+  color: var(--inchiostro-tenue);
+}
+
+/* Visibile solo agli screen reader. */
+.solo-lettore {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --- Schermi larghi --- */
+
+@media (min-width: 40em) {
+  h1 {
+    font-size: 2.4rem;
+  }
+
+  h2 {
+    font-size: 1.75rem;
+  }
+
+  .settimana {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .piede__colonne {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .scheda__dati div {
+    padding: 0.25rem 0;
+  }
+}
+
+@media (min-width: 64em) {
+  .settimana {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .piede__colonne {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* --- Preferenze dell'utente --- */
+
+/*
+  Il sito non ha animazioni decorative. Questa regola resta come rete
+  di sicurezza: se in futuro qualcuno ne aggiunge una, qui si spegne.
+*/
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --inchiostro-tenue: #2b2d31;
+    --bordo: #1b1b1b;
+  }
+}
+
+@media print {
+  .navigazione,
+  .salta-al-contenuto,
+  .mappa,
+  .filtro {
+    display: none;
+  }
+
+  body {
+    font-size: 12pt;
+  }
+}

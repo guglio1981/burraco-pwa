@@ -10,3 +10,6 @@ coverage/
 .DS_Store
 *.log
 .vite/
+.next/
+.vercel/
+next-env.d.ts

@@ -25,3 +25,12 @@ npm run dev                   # server + web in parallelo
 Vedi `BURRACO_SPEC_COMPLETA.md` (handoff). Riassunto: 108 carte, 11 in mano + pozzetto 11 a testa,
 scale ≥3 (tris/poker o sequenza stesso seme), burraco ≥7 (pulito/semi/sporco), chiusura con
 pozzetto+burraco, modalità Veloce / 1005 / 2005. Invariante: la somma carte è **sempre 108**.
+
+---
+
+## Altro in questo repository
+
+`apps/parkinson` — sito dell'Associazione Parkinson «Rino Gangemi» ODV di
+Delebio (SO). Next.js + Sanity, progetto indipendente da Burraco: si deploya
+come progetto Vercel separato con Root Directory `apps/parkinson`.
+Vedi [apps/parkinson/README.md](apps/parkinson/README.md).
