@@ -28,9 +28,10 @@ export default async function PaginaChiSiamo() {
             <h2>Come è nata l’associazione</h2>
             <p>
               L’associazione è nata il 22 novembre 2010 per volontà di cinque soci fondatori, con
-              atto del notaio O. Nuzzo a Colico. Porta il nome di Rino Gangemi. Dal 2 agosto 2022 è
-              iscritta al RUNTS, il registro nazionale del Terzo settore, come organizzazione di
-              volontariato.
+              atto del notaio O. Nuzzo a Colico. Porta il nome di Rino Gangemi, che aveva guidato la
+              prima associazione Parkinson del territorio: questa ne raccoglie il lavoro. Dal 2
+              agosto 2022 è iscritta al RUNTS, il registro nazionale del Terzo settore, come
+              organizzazione di volontariato.
             </p>
 
             <h2>Che cosa facciamo</h2>

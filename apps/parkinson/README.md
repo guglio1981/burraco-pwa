@@ -1,29 +1,83 @@
-# Sito dell'Associazione Parkinson «Rino Gangemi» ODV
+# Proposta di nuovo sito — Associazione Parkinson «Rino Gangemi» ODV
 
 Delebio (SO) — attività in Bassa Valle, Valchiavenna e Alto Lario.
 
-Next.js (App Router) + TypeScript, contenuti da Sanity, deploy su Vercel.
+> **Questa non è la casa dell'associazione su internet.**
+> Il sito ufficiale è e resta **rinogangemiparkinson.org** (WordPress), che
+> questo progetto non tocca in nessun modo: nessuna modifica al DNS, nessun
+> intervento sul WordPress, nessun collegamento al dominio reale.
+> Qui c'è una versione di prova da mostrare all'associazione prima di
+> qualsiasi decisione.
+
+Next.js (App Router) + TypeScript, contenuti da Sanity, deploy su un dominio
+di anteprima Vercel.
 
 ---
+
+## Il sito non deve finire su Google
+
+Se l'anteprima venisse indicizzata farebbe concorrenza al sito vero sulle
+stesse ricerche, e chi cerca aiuto rischierebbe di trovare la copia invece
+dell'originale. Ci sono tre barriere, perché i motori di ricerca ogni tanto
+ne ignorano una:
+
+| dove | cosa |
+|---|---|
+| `<meta name="robots">` | `noindex, nofollow, nocache` |
+| intestazione HTTP | `X-Robots-Tag: noindex, nofollow, noarchive` |
+| `robots.txt` | `Disallow: /`, nessuna sitemap dichiarata |
+
+Sono comandate da `NEXT_PUBLIC_SITO_ANTEPRIMA`, e **il valore predefinito è
+l'anteprima**: per pubblicare davvero bisogna scrivere `false` di proposito.
+Una dimenticanza lascia il sito nascosto, non esposto.
+
+In cima a ogni pagina c'è anche un avviso che dice che è una proposta e
+rimanda al sito ufficiale: serve a chi riceve il link per email.
+
+## Identità visiva — incompleta, servono i file
+
+**Logo: mancante.** La rete di questo ambiente blocca `rinogangemiparkinson.org`
+e anche le copie d'archivio, quindi non è stato possibile scaricarlo né
+guardarlo. Non posso dire se sia a bassa risoluzione o se vada rifatto in SVG:
+serve il file originale.
+
+**Palette: provvisoria, non ripresa dall'originale.** Per lo stesso motivo il
+CSS del sito attuale non è stato letto. I colori in `src/app/globals.css` sono
+scelti a mano e vanno sostituiti con quelli veri.
+
+Per sostituirli: cambia i sei colori nel blocco `:root` e lancia
+
+```bash
+npm run contrasto
+```
+
+Lo script rilegge il CSS (non una copia dei valori, così non possono
+divergere) e controlla ogni accoppiata testo/sfondo. Esce con errore sotto AA.
+Se una tinta originale non arriva a 4,5:1 va scurita mantenendo la stessa
+tonalità: **l'accessibilità viene prima della fedeltà cromatica.**
+
+Oggi tutte e dodici le accoppiate raggiungono AAA (7:1).
+
+**Tipografia:** caratteri di sistema, nessun font da scaricare. A 20 px sono
+già molto leggibili e costano zero byte su una connessione lenta.
 
 ## Le due regole da cui discende tutto il resto
 
 **1. Chi usa questo sito ha il Parkinson.** Tremore, precisione ridotta, spesso
-età avanzata e vista stanca. Quindi: testo da 20 px, contrasti oltre 7:1 (WCAG
-AAA), bersagli da almeno 48 px, nessun menu a scomparsa, nessuna tendina che si
-apre al passaggio del mouse, nessuna animazione. Tutto raggiungibile da
-tastiera, con il focus ben visibile.
+età avanzata e vista stanca. Quindi: testo da 20 px, contrasti oltre 7:1,
+bersagli da almeno 48 px, nessun menu a scomparsa, nessuna tendina che si apre
+al passaggio del mouse, nessuna animazione. Tutto raggiungibile da tastiera,
+con il focus ben visibile.
 
 **2. Si naviga dalla valle, con quello che si ha.** Connessioni lente e telefoni
-di qualche anno fa. Quindi: pagine statiche, caratteri di sistema (zero font da
-scaricare), nessun feed social incorporato, e **nessun JavaScript** sulle pagine
-pubbliche.
+di qualche anno fa. Quindi: pagine statiche, caratteri di sistema, nessun feed
+social incorporato, e **nessun JavaScript** sulle pagine pubbliche.
 
 Se modifichi qualcosa, queste due regole vengono prima dell'estetica.
 
 ## Peso delle pagine
 
-| | prima del contenuto | dopo |
+| | prima | dopo |
 |---|---|---|
 | Home | 6 kB HTML + 162 kB JS | **3,0 kB HTML + 2,3 kB CSS** |
 | Pagine interne | idem | **~2,5 kB HTML** (il CSS è già in cache) |
@@ -39,8 +93,7 @@ volte, i link sono link, il modulo contatti è un POST HTML e il pulsante
 Se qualcosa non combacia lo script non tocca niente e lascia la pagina come
 l'ha prodotta Next: il guasto peggiore possibile è ritrovarsi il JavaScript.
 Il giorno in cui servisse un vero componente client, metti
-`MANTIENI_JS_NEXT=1` fra le variabili d'ambiente e torna al comportamento
-normale di Next.
+`MANTIENI_JS_NEXT=1` e torna al comportamento normale di Next.
 
 ## Il CMS
 
@@ -54,31 +107,25 @@ Due sole collezioni, più un documento unico per i dati dell'associazione.
 
 I campi sono guidati: i giorni si spuntano da un elenco, gli orari si scelgono
 da una lista a passi di 15 minuti, le date da un calendario, i comuni e le
-qualifiche da una tendina. Non c'è nessun campo a testo libero dove vada un
-dato strutturato, così nessuno può scrivere «mercoledì mattina verso le 10» in
-un campo che il sito deve poter ordinare.
+qualifiche da una tendina. Nessun campo a testo libero dove vada un dato
+strutturato, così nessuno può scrivere «mercoledì mattina verso le 10» in un
+campo che il sito deve poter ordinare. A testo libero restano le descrizioni,
+che sono prosa.
 
-A testo libero restano solo le descrizioni, che sono prosa.
-
-`attiva` serve a **sospendere senza cancellare**: togli la spunta e l'attività
-sparisce dal sito, ma resta salvata con tutti i suoi dati.
-
-Gli eventi con la data passata escono da soli dalla home: li filtra la query,
-non una persona.
+`attiva` serve a **sospendere senza cancellare**. Gli eventi con la data
+passata escono da soli dalla home: li filtra la query, non una persona.
 
 ### Lo Studio
 
-Lo Studio è un'applicazione a parte, ospitata gratis da Sanity
-(`nomeprogetto.sanity.studio`). Non è dentro questo sito: `sanity` v6 e Next 16
-litigano in fase di build, e soprattutto tenerlo fuori vuol dire che il sito
-pubblico non si porta dietro un megabyte di editor.
+Applicazione a parte, ospitata gratis da Sanity (`nomeprogetto.sanity.studio`).
+Non è dentro questo sito: `sanity` v6 e Next 16 non compilano insieme, e
+tenerlo fuori vuol dire che il sito pubblico non si porta dietro un megabyte
+di editor. I volontari entrano con la loro email, senza account GitHub.
 
 ```bash
 npm run studio:dev      # Studio in locale su :3333
 npm run studio:deploy   # pubblica lo Studio
 ```
-
-I volontari entrano con la loro email. Non serve un account GitHub.
 
 ## Avvio
 
@@ -88,30 +135,29 @@ cp .env.example .env.local     # funziona anche senza compilarlo
 npm run dev                    # http://localhost:3000
 ```
 
-Senza `NEXT_PUBLIC_SANITY_PROJECT_ID` il sito parte lo stesso con i contenuti
-di esempio in `src/lib/content/esempio.ts` e mostra un avviso su ogni pagina,
-perché nessuno scambi quei dati per veri. Nel file ogni valore è marcato
+Senza `NEXT_PUBLIC_SANITY_PROJECT_ID` il sito parte con i contenuti di
+`src/lib/content/esempio.ts`, ripresi dal sito attuale. Ogni valore è marcato
 `[VERIFICATO]` o `[DA COMPLETARE]`.
 
 ### Collegare Sanity
 
-1. `npx sanity login` e poi `npx sanity init --project-plan free`
+1. `npx sanity login`, poi `npx sanity init --project-plan free`
 2. Copia project ID e dataset in `.env.local`
-3. Carica i dati di partenza: `npx sanity dataset import sanity/seed.ndjson production`
+3. `npx sanity dataset import sanity/seed.ndjson production`
 4. `npm run studio:deploy`
 
 ### Rigenerazione al cambio contenuto (ISR)
 
-Le pagine sono statiche e si rigenerano da sole ogni ora (serve comunque: a
-mezzanotte il calendario deve scorrere di un giorno). Quando un volontario
-pubblica una modifica non aspetta l'ora: Sanity chiama `/api/revalidate` e la
-pagina si rifà subito.
+Le pagine sono statiche e si rigenerano ogni ora (serve: a mezzanotte il
+calendario deve scorrere di un giorno). Quando un volontario pubblica una
+modifica non aspetta l'ora: Sanity chiama `/api/revalidate` e la pagina si
+rifà subito.
 
 Su sanity.io/manage → API → Webhooks:
 
 | campo | valore |
 |---|---|
-| URL | `https://<dominio>/api/revalidate` |
+| URL | `https://<dominio-anteprima>/api/revalidate` |
 | Dataset | `production` |
 | Trigger | Create, Update, Delete |
 | Filter | `_type in ["attivita","evento","impostazioni"]` |
@@ -122,41 +168,49 @@ Senza firma valida la richiesta viene respinta con 401.
 ## Il modulo contatti
 
 Tre campi e un campo trappola invisibile per i robot. È un `<form method="post">`
-normale: funziona senza JavaScript.
-
-Se `RESEND_API_KEY`, `CONTATTI_EMAIL_TO` e `CONTATTI_EMAIL_FROM` non sono
-impostati **il modulo non fa finta di aver spedito**: porta a una pagina che
+normale: funziona senza JavaScript. Se le variabili della posta non sono
+impostate **il modulo non fa finta di aver spedito**: porta a una pagina che
 dice com'è andata e invita a telefonare.
 
-## Deploy su Vercel
+## Deploy su Vercel (dominio di anteprima)
 
-Questo è un monorepo che contiene anche il progetto Burraco, quindi al sito
-serve un **progetto Vercel separato**:
+Progetto Vercel separato, su un dominio `*.vercel.app`. **Nessun dominio
+personalizzato, nessuna modifica DNS.**
 
 - Root Directory: `apps/parkinson`
 - Framework: Next.js (rilevato da solo)
-- Build Command: quello del `package.json` (include il passaggio di alleggerimento)
 - Variabili d'ambiente: quelle di `.env.example`
+- **Lascia `NEXT_PUBLIC_SITO_ANTEPRIMA` non impostata** (o a `true`)
+- `NEXT_PUBLIC_SITE_URL` = l'indirizzo di anteprima, per esempio
+  `https://rinogangemi-preview.vercel.app`
 
 ## Controlli prima di pubblicare una modifica
 
 ```bash
 npm run typecheck
+npm run contrasto
 npm run build
 ```
 
-Il sito è stato verificato con axe-core su tutte le pagine (nessuna violazione
-WCAG 2.1 AA / 2.2 AA), con la tastiera, e con JavaScript disattivato.
+Verificato con axe-core su tutte le pagine (nessuna violazione WCAG 2.1 AA /
+2.2 AA), con la tastiera, e con JavaScript disattivato.
 
 Restano sotto i 48 px solo i link dentro una frase: allargarli farebbe
 sovrapporre le aree cliccabili di due righe vicine e si toccherebbe quello
 sbagliato. La norma (WCAG 2.2, criterio 2.5.8) li esclude proprio per questo.
 
-## Cosa manca
+## Cosa serve dall'associazione
 
-Dati che non sono pubblici e che l'associazione deve inserire nel CMS:
+File grafici, che non è stato possibile recuperare:
 
-- telefono e email dell'associazione
+- **il logo**, nel formato migliore che hanno (se è solo un JPG piccolo va
+  ridisegnato in SVG prima del rilascio)
+- **i colori** del sito o della carta intestata
+
+Dati non pubblici, da inserire nel CMS:
+
+- telefono e casella email sul dominio — nelle fonti pubbliche compare solo un
+  indirizzo personale (`dellocaamos@hotmail.it`), che sul sito non va messo
 - IBAN e banca
 - nomi del consiglio direttivo
 - statuto e bilanci in PDF
@@ -164,7 +218,18 @@ Dati che non sono pubblici e che l'associazione deve inserire nel CMS:
 - link Facebook e link per la donazione online
 - coordinate esatte della sede (ora c'è il centro di Delebio)
 
-I **massaggi** (via Corti 12, tel. 347 6541104) non sono stati inseriti: sono su
-appuntamento, senza un giorno fisso, e il modello «attività ricorrente» chiede
-giorno e orario. Vanno raccontati in una descrizione o servirà un campo
-«su appuntamento».
+Da verificare con loro, perché ricavato da fonti di terze parti e non dal
+sito: il codice fiscale **91014230147** (elenco soci CSV Monza-Lecco-Sondrio) e
+la frase su Rino Gangemi in «Chi siamo».
+
+Decisione aperta: i **massaggi** (via Corti 12, tel. 347 6541104) non sono
+stati inseriti. Sono su appuntamento, senza giorno fisso, e «attività
+ricorrente» pretende giorno e orario. O si raccontano in una descrizione, o
+serve un campo «su appuntamento».
+
+## Se diventa un repository suo
+
+La cartella è già autosufficiente: ha il suo `package.json`, il suo
+`tsconfig.json` e nessuna dipendenza dal resto del monorepo. Per staccarla
+basta copiarla nella radice del nuovo repository; la Root Directory su Vercel
+torna a essere `.`.

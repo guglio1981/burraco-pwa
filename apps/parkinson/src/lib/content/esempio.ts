@@ -27,6 +27,21 @@ const ORATORIO = {
 
 export const attivitaEsempio: Attivita[] = [
   {
+    _id: 'esempio-ginnastica',
+    titolo: 'Ginnastica di gruppo',
+    slug: 'ginnastica-di-gruppo',
+    giorni: ['mercoledi'], // [VERIFICATO]
+    oraInizio: '09:30', // [VERIFICATO]
+    oraFine: '10:30', // [VERIFICATO]
+    luogo: ORATORIO,
+    conduttore: { nome: 'Prof.ssa Iolanda Pasini', qualifica: 'Istruttore di ginnastica' }, // [VERIFICATO]
+    destinatari: 'persone-con-parkinson', // [VERIFICATO] "aperta a tutti i pazienti"
+    contatto: { nome: 'Segreteria', telefono: '000 0000000' }, // [DA COMPLETARE]
+    descrizione:
+      'Movimento in gruppo pensato per chi ha il Parkinson: esercizi ampi, allungamento, equilibrio e cammino. Si va al ritmo di ciascuno, in piedi o da seduti. Venire in gruppo aiuta a mantenere la costanza, che è la parte che conta di più.',
+    attiva: true,
+  },
+  {
     _id: 'esempio-logopedia',
     titolo: 'Logopedia',
     slug: 'logopedia',
@@ -54,21 +69,6 @@ export const attivitaEsempio: Attivita[] = [
     contatto: { nome: 'Studio RI-ABILITA', telefono: '340 7267180' }, // [VERIFICATO]
     descrizione:
       'Sedute individuali con un fisioterapista, su appuntamento. Si lavora sull’equilibrio, sul passo e sui movimenti che durante la giornata diventano più faticosi. Il programma è costruito sulla singola persona e viene rivisto nel tempo.',
-    attiva: true,
-  },
-  {
-    _id: 'esempio-ginnastica',
-    titolo: 'Ginnastica di gruppo',
-    slug: 'ginnastica-di-gruppo',
-    giorni: ['mercoledi'], // [DA COMPLETARE]
-    oraInizio: '15:00', // [DA COMPLETARE]
-    oraFine: '16:00', // [DA COMPLETARE]
-    luogo: ORATORIO,
-    conduttore: { nome: 'Da indicare', qualifica: 'Istruttore di ginnastica' }, // [DA COMPLETARE]
-    destinatari: 'persone-e-familiari',
-    contatto: { nome: 'Segreteria', telefono: '000 0000000' }, // [DA COMPLETARE]
-    descrizione:
-      'Movimento in gruppo pensato per chi ha il Parkinson: esercizi ampi, allungamento, equilibrio e cammino. Si va al ritmo di ciascuno, in piedi o da seduti. Venire in gruppo aiuta a mantenere la costanza, che è la parte che conta di più.',
     attiva: true,
   },
 ]
@@ -100,7 +100,9 @@ export const eventiEsempio: Evento[] = [
 
 export const impostazioniEsempio: Impostazioni = {
   telefono: '000 0000000', // [DA COMPLETARE]
-  email: 'info@rinogangemiparkinson.org', // [DA COMPLETARE] verificare la casella reale
+  // Nelle fonti pubbliche compare solo un indirizzo personale (dellocaamos@hotmail.it):
+  // sul sito va una casella sul dominio, da creare o confermare.
+  email: 'info@rinogangemiparkinson.org', // [DA COMPLETARE]
   sede: ORATORIO,
   cap: '23014', // [VERIFICATO]
   coordinate: { lat: 46.1417, lng: 9.4083 }, // [DA COMPLETARE] centro di Delebio, non il civico esatto

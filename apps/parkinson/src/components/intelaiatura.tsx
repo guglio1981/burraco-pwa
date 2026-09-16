@@ -1,4 +1,5 @@
 import { getImpostazioni, sanityConfigurato } from '@/lib/content'
+import { ANTEPRIMA, SITO } from '@/lib/sito'
 import '@/app/globals.css'
 import type { Impostazioni } from '@/lib/content'
 import { SCRIPT_COPIA } from './copia'
@@ -47,14 +48,25 @@ function Intestazione({ paginaCorrente }: { paginaCorrente: VoceMenu }) {
   )
 }
 
-/** Compare solo finché il CMS non è collegato, per non spacciare i dati di prova per veri. */
-function AvvisoContenutiDiProva() {
+/**
+ * Dichiara che questa non è la casa dell'associazione su internet.
+ * Deve restare finché la proposta è una proposta: chi ci arriva per caso,
+ * o chi la riceve per email, deve capirlo dalla prima riga senza chiedere.
+ */
+function AvvisoAnteprima() {
   return (
     <aside className="avviso-bozza" aria-label="Stato del sito">
       <div className="contenitore">
         <p>
-          <strong>Anteprima.</strong> Il sito non è ancora collegato al CMS: orari, recapiti e
-          importi qui sotto sono dati di esempio, non informazioni reali.
+          <strong>Versione di prova.</strong> Questa è una proposta di nuovo sito, non il sito
+          ufficiale dell’associazione, che resta{' '}
+          <a href={SITO.sitoUfficiale} rel="noopener">
+            rinogangemiparkinson.org
+          </a>
+          .{' '}
+          {sanityConfigurato
+            ? 'I contenuti sono ripresi dal sito attuale e vanno verificati.'
+            : 'I contenuti sono ripresi dal sito attuale, ma alcuni recapiti sono ancora segnaposto.'}
         </p>
       </div>
     </aside>
@@ -97,7 +109,7 @@ export async function Intelaiatura({
       <a className="salta-al-contenuto" href="#contenuto">
         Vai al contenuto
       </a>
-      {!sanityConfigurato && <AvvisoContenutiDiProva />}
+      {ANTEPRIMA && <AvvisoAnteprima />}
       <Intestazione paginaCorrente={paginaCorrente} />
       <main id="contenuto">{children}</main>
       <Piede impostazioni={impostazioni} />

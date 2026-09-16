@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { SITO } from '@/lib/sito'
+import { ANTEPRIMA, SITO } from '@/lib/sito'
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITO.url),
@@ -16,6 +16,17 @@ export const metadata: Metadata = {
     description: SITO.descrizione,
   },
   alternates: { canonical: '/' },
+  // Prima barriera contro l'indicizzazione. La seconda è l'intestazione
+  // X-Robots-Tag in next.config.ts, la terza è robots.txt: i motori di
+  // ricerca ne ignorano una ogni tanto, tutte e tre no.
+  robots: ANTEPRIMA
+    ? {
+        index: false,
+        follow: false,
+        nocache: true,
+        googleBot: { index: false, follow: false, noimageindex: true },
+      }
+    : undefined,
 }
 
 export const viewport: Viewport = {

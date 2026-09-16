@@ -6,6 +6,23 @@
 */
 
 :root {
+  /*
+    PALETTE PROVVISORIA — da sostituire con i colori dell'associazione.
+
+    Non è stato possibile ricavarli dal sito attuale: la rete di questo
+    ambiente blocca rinogangemiparkinson.org e anche le copie d'archivio,
+    quindi né il CSS né il logo sono stati scaricati. Questi valori sono
+    scelti a mano, non ripresi dall'originale.
+
+    Per sostituirli: cambia i sei colori qui sotto e lancia
+
+        npm run contrasto
+
+    che rilegge questo file e controlla ogni accoppiata testo/sfondo.
+    Se una tinta originale non arriva a 4,5:1 va scurita mantenendo la
+    stessa tonalità: l'accessibilità viene prima della fedeltà cromatica.
+  */
+
   /* Colori */
   --carta: #ffffff;
   --carta-tenue: #f4f2ed;

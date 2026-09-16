@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "studio:dev": "sanity dev --port 3333",
     "studio:deploy": "sanity deploy",
-    "studio:schema": "sanity schema validate"
+    "studio:schema": "sanity schema validate",
+    "contrasto": "node scripts/contrasto.mjs"
   },
   "dependencies": {
     "next": "^16.3.5",

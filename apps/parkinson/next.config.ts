@@ -8,13 +8,23 @@ const intestazioniDiSicurezza = [
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()' },
 ]
 
+/*
+  Terza barriera contro l'indicizzazione, la più solida: l'intestazione
+  vale anche per PDF, immagini e sitemap, che un <meta> non copre.
+  Si spegne solo impostando NEXT_PUBLIC_SITO_ANTEPRIMA=false.
+*/
+const anteprima = process.env.NEXT_PUBLIC_SITO_ANTEPRIMA !== 'false'
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   // Le pagine sono statiche e cambiano di rado: la compressione la fa Vercel.
   compress: true,
   async headers() {
-    return [{ source: '/:path*', headers: intestazioniDiSicurezza }]
+    const intestazioni = anteprima
+      ? [...intestazioniDiSicurezza, { key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' }]
+      : intestazioniDiSicurezza
+    return [{ source: '/:path*', headers: intestazioni }]
   },
 }
 
