@@ -1,5 +1,6 @@
 import { getImpostazioni, sanityConfigurato } from '@/lib/content'
 import { ANTEPRIMA, SITO } from '@/lib/sito'
+import { trovaLogo } from '@/lib/logo'
 import '@/app/globals.css'
 import type { Impostazioni } from '@/lib/content'
 import { SCRIPT_COPIA } from './copia'
@@ -21,12 +22,30 @@ const VOCI: { id: Exclude<VoceMenu, null>; titolo: string; href: string; pulsant
  * mouse, niente bersagli piccoli.
  */
 function Intestazione({ paginaCorrente }: { paginaCorrente: VoceMenu }) {
+  const logo = trovaLogo()
   return (
     <header className="intestazione">
       <div className="contenitore intestazione__riga">
         <a className="marchio" href="/">
-          <span className="marchio__nome">Parkinson Rino Gangemi ODV</span>
-          <span className="marchio__luogo">Delebio · Bassa Valle, Valchiavenna e Alto Lario</span>
+          {logo ? (
+            /*
+              alt vuoto di proposito: il nome dell'associazione è scritto qui
+              accanto, quindi allo screen reader il logo lo ripeterebbe.
+              width e height riservano lo spazio e impediscono che la pagina
+              salti mentre l'immagine arriva.
+            */
+            <img
+              className="marchio__logo"
+              src={logo.percorso}
+              alt=""
+              width={logo.larghezza}
+              height={logo.altezza}
+            />
+          ) : null}
+          <span className="marchio__testo">
+            <span className="marchio__nome">Parkinson Rino Gangemi ODV</span>
+            <span className="marchio__luogo">Delebio · Bassa Valle, Valchiavenna e Alto Lario</span>
+          </span>
         </a>
         <nav className="navigazione" aria-label="Menu principale">
           <ul>

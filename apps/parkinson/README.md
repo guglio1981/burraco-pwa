@@ -34,32 +34,90 @@ Una dimenticanza lascia il sito nascosto, non esposto.
 In cima a ogni pagina c'è anche un avviso che dice che è una proposta e
 rimanda al sito ufficiale: serve a chi riceve il link per email.
 
-## Identità visiva — incompleta, servono i file
+## Identità visiva
 
-**Logo: mancante.** La rete di questo ambiente blocca `rinogangemiparkinson.org`
-e anche le copie d'archivio, quindi non è stato possibile scaricarlo né
-guardarlo. Non posso dire se sia a bassa risoluzione o se vada rifatto in SVG:
-serve il file originale.
+### Logo — manca il file
 
-**Palette: provvisoria, non ripresa dall'originale.** Per lo stesso motivo il
-CSS del sito attuale non è stato letto. I colori in `src/app/globals.css` sono
-scelti a mano e vanno sostituiti con quelli veri.
+La rete di questo ambiente blocca `rinogangemiparkinson.org` e anche le copie
+d'archivio (`web.archive.org`), quindi non è stato possibile scaricarlo né
+guardarlo. **Non posso dire se sia a bassa risoluzione o se vada rifatto in
+SVG: non l'ho mai visto.** Serve il file originale.
 
-Per sostituirli: cambia i sei colori nel blocco `:root` e lancia
+Lo spazio però è già pronto. Appoggia il file in `public/` con uno di questi
+nomi e compare da solo nell'intestazione, senza toccare il codice:
+
+```
+public/logo.svg     ← preferito
+public/logo.png
+public/logo.webp
+public/logo.jpg
+```
+
+Se è un'immagine a punti il build lo dice:
+
+```
+Logo: logo.png (240×240) è un'immagine a punti. È anche piccola:
+sugli schermi ad alta densità si sgranerà.
+Prima del rilascio andrebbe rifatto in SVG.
+```
+
+Finché il file non c'è l'intestazione resta col solo nome scritto: nessuna
+immagine rotta, nessuno spazio vuoto.
+
+### Palette — provvisoria, non ripresa dall'originale
+
+Per lo stesso motivo il CSS del sito attuale non è stato letto. I colori nel
+blocco `:root` di `src/app/globals.css` sono **scelti a mano**, e il file lo
+dichiara per non farli scambiare per quelli dell'associazione.
+
+Per sostituirli: cambia i sei colori e lancia
 
 ```bash
 npm run contrasto
 ```
 
-Lo script rilegge il CSS (non una copia dei valori, così non possono
-divergere) e controlla ogni accoppiata testo/sfondo. Esce con errore sotto AA.
-Se una tinta originale non arriva a 4,5:1 va scurita mantenendo la stessa
+Rilegge il CSS (non una copia dei valori, così non possono divergere) e
+controlla le dodici accoppiate testo/sfondo, uscendo con errore sotto AA. Se
+una tinta originale non arriva a 4,5:1 va scurita mantenendo la stessa
 tonalità: **l'accessibilità viene prima della fedeltà cromatica.**
 
-Oggi tutte e dodici le accoppiate raggiungono AAA (7:1).
+Oggi tutte e dodici raggiungono AAA (7:1).
 
-**Tipografia:** caratteri di sistema, nessun font da scaricare. A 20 px sono
-già molto leggibili e costano zero byte su una connessione lenta.
+### Tipografia — Atkinson Hyperlegible Next
+
+Disegnato dal Braille Institute per chi ci vede poco: distingue fra loro i
+caratteri che di solito si confondono (`1 l I`, `0 O`, `5 S`) e allarga le
+forme invece di stringerle. Su un pubblico anziano che legge molto testo di
+servizio — orari, nomi, numeri di telefono — è il motivo per cui vale i suoi
+kilobyte.
+
+Codice fiscale e IBAN restano in monospaziato di sistema: lì conta anche che
+le cifre stiano incolonnate mentre le si ricopia, e i caratteri a spaziatura
+fissa già installati lo fanno bene senza scaricare niente.
+
+| scelta | perché |
+|---|---|
+| un file variabile, non due statici | 26 kB in una richiesta invece di 26 kB in due |
+| ridotto ai caratteri italiani | da 33 kB a 26 kB |
+| ospitato da noi, non da Google Fonts | nessuna richiesta a terzi, nessun tracciamento |
+| `font-display: optional` | vedi sotto |
+| preload come intestazione HTTP | parte prima che il browser legga l'HTML |
+
+`optional` e non `swap`: swap mostra prima il carattere di sistema e poi
+rimpagina tutto quando il font arriva. **Per chi ha il tremore, una pagina che
+si sposta mentre stai mirando un pulsante è un bersaglio che scappa.** Con
+`optional` il browser lo usa solo se fa in tempo, altrimenti resta sul
+carattere di sistema senza spostare niente, e dalla pagina dopo lo trova in
+cache. Zero salti, sempre.
+
+Per rigenerare il sottoinsieme dopo un aggiornamento del font:
+
+```bash
+pip install fonttools brotli
+npm run font
+```
+
+Licenza SIL OFL 1.1, testo in `public/font/LICENSE.txt`.
 
 ## Le due regole da cui discende tutto il resto
 
@@ -79,8 +137,9 @@ Se modifichi qualcosa, queste due regole vengono prima dell'estetica.
 
 | | prima | dopo |
 |---|---|---|
-| Home | 6 kB HTML + 162 kB JS | **3,0 kB HTML + 2,3 kB CSS** |
+| Home | 6 kB HTML + 162 kB JS | **3,1 kB HTML + 2,5 kB CSS** |
 | Pagine interne | idem | **~2,5 kB HTML** (il CSS è già in cache) |
+| Carattere | — | 26 kB, una volta sola per tutto il sito |
 
 Il salto viene da `scripts/alleggerisci.mjs`, che gira dopo `next build`.
 
@@ -201,11 +260,11 @@ sbagliato. La norma (WCAG 2.2, criterio 2.5.8) li esclude proprio per questo.
 
 ## Cosa serve dall'associazione
 
-File grafici, che non è stato possibile recuperare:
+File grafici, che non è stato possibile recuperare dalla rete:
 
-- **il logo**, nel formato migliore che hanno (se è solo un JPG piccolo va
-  ridisegnato in SVG prima del rilascio)
-- **i colori** del sito o della carta intestata
+- **il logo**, nel formato migliore che hanno — basta appoggiarlo in `public/`
+- **i colori**: il CSS del sito attuale, oppure anche solo uno screenshot o la
+  carta intestata, da cui ricavarli
 
 Dati non pubblici, da inserire nel CMS:
 

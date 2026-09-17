@@ -5,6 +5,37 @@
   superano 7:1, cioè WCAG AAA per il testo normale.
 */
 
+/*
+  Atkinson Hyperlegible Next, disegnato dal Braille Institute per chi ci
+  vede poco. Distingue fra loro i caratteri che di solito si confondono —
+  1 l I, 0 O, 5 S — e allarga le forme delle lettere invece di stringerle.
+  Su un pubblico anziano, che legge molto testo di servizio (orari, nomi,
+  numeri di telefono), è il motivo per cui vale i suoi kilobyte.
+
+  Codice fiscale e IBAN restano invece in monospaziato: lì conta anche che
+  le cifre stiano incolonnate mentre le si ricopia, e i caratteri a spaziatura
+  fissa di sistema lo fanno già bene senza scaricare niente.
+
+  Un file solo, variabile, ridotto ai soli caratteri che il sito usa:
+  26 kB invece dei 33 originali. Si rigenera con "npm run font".
+  Licenza SIL OFL 1.1, testo in public/font/LICENSE.txt.
+*/
+@font-face {
+  font-family: 'Atkinson Hyperlegible Next';
+  src: url('/font/atkinson-hyperlegible-next.woff2') format('woff2-variations');
+  font-weight: 200 800;
+  font-style: normal;
+  /*
+    "optional", non "swap": swap mostra prima il carattere di sistema e poi
+    rimpagina tutto quando il font arriva. Per chi ha il tremore, una pagina
+    che si sposta mentre stai mirando un pulsante è un bersaglio che scappa.
+    Con "optional" il browser lo usa solo se fa in tempo, altrimenti resta
+    sul carattere di sistema senza spostare niente, e dalla pagina dopo lo
+    trova in cache. Zero salti, sempre.
+  */
+  font-display: optional;
+}
+
 :root {
   /*
     PALETTE PROVVISORIA — da sostituire con i colori dell'associazione.
@@ -79,8 +110,9 @@ body {
   margin: 0;
   background: var(--carta);
   color: var(--inchiostro);
-  /* Caratteri di sistema: zero byte da scaricare su una connessione lenta. */
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  /* Se Atkinson non fa in tempo, si legge benissimo lo stesso. */
+  font-family: 'Atkinson Hyperlegible Next', system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
   font-size: 1rem; /* 20px */
   line-height: 1.6;
   text-rendering: optimizeLegibility;
@@ -193,11 +225,24 @@ a:hover {
 
 .marchio {
   display: inline-flex;
-  flex-direction: column;
+  align-items: center;
+  gap: var(--spazio-s);
   text-decoration: none;
   color: var(--inchiostro);
   padding: var(--spazio-xs) 0;
   min-height: var(--bersaglio);
+}
+
+/* Compare solo se in public/ c'è un logo. Altezza fissa, larghezza a seguire. */
+.marchio__logo {
+  height: 2.6rem;
+  width: auto;
+  flex-shrink: 0;
+}
+
+.marchio__testo {
+  display: inline-flex;
+  flex-direction: column;
   justify-content: center;
 }
 
